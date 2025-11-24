@@ -2612,10 +2612,15 @@
 
             deleteSelection() {
                 if(!this.selectedObject) return;
-                  if(this.selectedObject.userData.isFurniture) this.selectedObject.parent.remove(this.selectedObject);
-                  else this.scene.remove(this.selectedObject);
-                  this.selectObject(null); this.updateBreakerCables(); this.stateManager.snapshot(); this.updateStats(); this.showToast('Supprimé', 'info');
-              }
+                const isDoorFurniture = this.selectedObject.userData.isFurniture && this.selectedObject.userData.type === 'door';
+                const parentRoom = isDoorFurniture ? this.selectedObject.parent?.parent : null;
+
+                if(this.selectedObject.userData.isFurniture) this.selectedObject.parent.remove(this.selectedObject);
+                else this.scene.remove(this.selectedObject);
+
+                if(isDoorFurniture && parentRoom) this.refreshDoorLabels(parentRoom);
+                this.selectObject(null); this.updateBreakerCables(); this.stateManager.snapshot(); this.updateStats(); this.showToast('Supprimé', 'info');
+            }
 
             serializeScene() {
                 const objects = [];
