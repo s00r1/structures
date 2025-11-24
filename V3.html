@@ -1858,10 +1858,11 @@
                 const type = document.getElementById('furnitureSelector').value;
                 const group = target.getObjectByName('Furniture');
                 if(!group) { this.showToast('Aucun mobilier', 'error'); return; }
+                const isDoorType = ['door', 'frenchDoor', 'wcDoor'].includes(type);
                 for(let i = group.children.length - 1; i >=0; i--) {
                     if(group.children[i].userData.type === type) {
                           group.remove(group.children[i]);
-                          this.refreshDoorLabels(target);
+                          this.refreshDoorLabels(target, !isDoorType);
                           this.selectObject(target);
                           this.stateManager.snapshot();
                           this.updateBreakerCables();
