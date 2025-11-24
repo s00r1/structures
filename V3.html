@@ -1715,10 +1715,14 @@
             // --- SNAP & CONTRAINTES ---
             snapObject(obj) {
                 if (obj.userData.isFurniture) {
-                    // 1. VERROUILLAGE Y CONSTANT (Empêche de traverser le sol/plafond)
-                    if (obj.userData.defaultY !== undefined) {
-                        obj.position.y = obj.userData.defaultY;
-                    }
+                    // 1. CONTRAINTE VERTICALE SOUPLE (garde l'objet dans le volume de la pièce)
+                    const bbox = new THREE.Box3().setFromObject(obj);
+                    const size = new THREE.Vector3();
+                    bbox.getSize(size);
+                    const halfY = size.y / 2 || 0;
+                    const minY = Math.max(halfY, 0);
+                    const maxY = Math.max(minY, CONFIG.floorHeight - (halfY * 0.2));
+                    obj.position.y = THREE.MathUtils.clamp(obj.position.y, minY, maxY);
 
                     // 2. LOGIQUE "AIMANT" MUR (Porte & Fenêtre)
                     if (obj.userData.isWallMounted) {
@@ -1960,7 +1964,7 @@
                 this.scene.traverse(obj => {
                     if(obj.userData && obj.userData.type) {
                         const isCurrent = obj.userData.floor === this.floors.current;
-                        if(this.isGlobalView) { obj.visible = true; this.setOpacity(obj, 1); } 
+                        if(this.isGlobalView) { obj.visible = true; this.setOpacity(obj, 1); }
                         else {
                             if (obj.userData.floor > this.floors.current) obj.visible = false;
                             else if (isCurrent) { obj.visible = true; this.setOpacity(obj, 1); }
@@ -1970,9 +1974,48 @@
                 });
             }
 
+            restoreMaterialOpacity(obj) {
+                if(!obj) return;
+                obj.traverse(child => {
+                    if(!child.isMesh) return;
+                    const reset = (mat) => {
+                        if(!mat) return;
+                        if(!mat.userData) mat.userData = {};
+                        if(mat.userData.baseOpacity === undefined) mat.userData.baseOpacity = mat.opacity ?? 1;
+                        if(mat.userData.baseTransparent === undefined) mat.userData.baseTransparent = mat.transparent ?? false;
+                        mat.opacity = mat.userData.baseOpacity;
+                        mat.transparent = mat.userData.baseTransparent;
+                    };
+                    Array.isArray(child.material) ? child.material.forEach(reset) : reset(child.material);
+                });
+            }
+
+            cloneFurnitureWithFreshMaterials(original) {
+                const clone = original.clone(true);
+                clone.traverse(child => {
+                    if(!child.isMesh) return;
+                    const refreshMat = (mat) => {
+                        if(!mat) return null;
+                        const baseOpacity = mat.userData?.baseOpacity ?? mat.opacity ?? 1;
+                        const baseTransparent = mat.userData?.baseTransparent ?? mat.transparent ?? false;
+                        const newMat = mat.clone();
+                        if(!newMat.userData) newMat.userData = {};
+                        newMat.userData.baseOpacity = baseOpacity;
+                        newMat.userData.baseTransparent = baseTransparent;
+                        newMat.opacity = baseOpacity;
+                        newMat.transparent = baseTransparent;
+                        return newMat;
+                    };
+                    if(Array.isArray(child.material)) child.material = child.material.map(refreshMat);
+                    else child.material = refreshMat(child.material);
+                });
+                return clone;
+            }
+
             setOpacity(obj, val) {
                 obj.traverse(child => {
                     if(child.isMesh) {
+                        if(child.name === 'DoorBadge') return;
                         const applyToMaterial = (mat) => {
                             if(!mat.userData) mat.userData = {};
                             if(mat.userData.baseOpacity === undefined) {
@@ -2165,8 +2208,9 @@
                 if(targetFloor > this.floors.max) { this.floors.max = targetFloor; this.updateUI(); }
 
                 if(this.selectedObject.userData.isFurniture) {
-                    const clone = this.selectedObject.clone();
+                    const clone = this.cloneFurnitureWithFreshMaterials(this.selectedObject);
                     clone.position.x += 0.5; clone.position.z += 0.5;
+                    this.restoreMaterialOpacity(clone);
                     this.selectedObject.parent.add(clone); this.selectObject(clone);
                 } else {
                     const original = this.selectedObject;
@@ -2203,6 +2247,7 @@
                               this.addLabel(clone, clone.userData.labelText);
                           }
                           this.refreshDoorLabels(clone);
+                          this.restoreMaterialOpacity(clone);
                       }
                   }
                   this.updateFloorVisibility();
