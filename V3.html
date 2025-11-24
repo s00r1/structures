@@ -2070,8 +2070,17 @@
                 const scope = target || this.getEffectiveOpacityTarget(obj);
                 if(obj.userData?.type === 'Chambre') {
                     if(scope === 'furniture') {
+                        const targets = [];
                         const furniture = obj.getObjectByName('Furniture');
-                        return furniture ? [furniture] : [];
+                        if(furniture) targets.push(furniture);
+
+                        obj.children.forEach(child => {
+                            if(child === furniture) return;
+                            if(child.name === 'RoomShell' || child.name === 'StructureHitbox' || child.name === 'Label') return;
+                            targets.push(child);
+                        });
+
+                        return targets;
                     }
                     const shell = obj.getObjectByName('RoomShell');
                     return shell ? [shell] : [obj];
