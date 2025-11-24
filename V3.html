@@ -1945,13 +1945,13 @@
                       panel.classList.remove('opacity-50', 'pointer-events-none', 'scale-95');
                       panel.classList.add('opacity-100', 'scale-100');
                     document.getElementById('propName').value = obj.userData.name || '';
-                    if(!obj.userData.isFurniture) this.setColorTarget(this.colorTarget);
+                    this.setColorTarget(this.colorTarget);
                     this.refreshOpacityUI(obj);
 
                     this.control.showX = this.control.showY = this.control.showZ = true;
                     if(obj.userData.isFurniture) {
                         document.getElementById('propTitle').innerText = "MOBILIER";
-                        document.getElementById('colorSection').classList.add('hidden');
+                        document.getElementById('colorSection').classList.remove('hidden');
                         document.getElementById('sizeSection').classList.add('hidden');
                           document.getElementById('labelSection').classList.add('hidden');
                           document.getElementById('furnitureSection').classList.add('hidden');
@@ -1968,6 +1968,7 @@
                           this.refreshLabelUI(obj);
                           this.refreshBreakerUI(null);
                       }
+                      this.updateColorControlsForSelection(obj);
                       if(dupInput) dupInput.value = obj.userData.floor ?? this.floors.current;
                       } else {
                           this.control.detach();
@@ -1975,6 +1976,7 @@
                           document.getElementById('furnitureTransformSection').classList.add('hidden');
                           this.refreshBreakerUI(null);
                           this.refreshOpacityUI(null);
+                          this.updateColorControlsForSelection(null);
                           if(dupInput) dupInput.value = this.floors.current;
                       }
                   this.updateSelectionChips();
@@ -2205,6 +2207,22 @@
                 this.updateSelectionChips();
             }
 
+            updateColorControlsForSelection(obj) {
+                const colorSection = document.getElementById('colorSection');
+                if(!colorSection) return;
+
+                const supportsLabel = !!obj && !obj.userData?.isFurniture;
+                colorSection.classList.toggle('hidden', !obj);
+
+                const labelBtn = document.getElementById('targetLabel');
+                if(labelBtn) {
+                    labelBtn.classList.toggle('opacity-50', !supportsLabel);
+                    labelBtn.classList.toggle('pointer-events-none', !supportsLabel);
+                }
+
+                if(!supportsLabel && this.colorTarget === 'label') this.setColorTarget('block');
+            }
+
             formatFloorLabel(floor) {
                 return floor === 0 ? 'RDC' : `Étage ${floor}`;
             }
@@ -2277,9 +2295,9 @@
             applyColor(hex) {
                 if(!this.selectedObject) return;
                 const obj = this.selectedObject;
-                if(obj.userData.isFurniture) return;
                 this.ensureLabelDefaults(obj);
-                if(this.colorTarget === 'block') {
+                const target = (!obj.userData.isFurniture) ? this.colorTarget : 'block';
+                if(target === 'block') {
                     if(obj.userData.type === 'Chambre') this.setRoomWallColor(obj, hex);
                     else {
                         const shell = obj.getObjectByName('RoomShell');
