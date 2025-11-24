@@ -501,21 +501,45 @@
             </div>
 
             <!-- Furniture Manager -->
-            <div id="furnitureSection" class="mb-3 space-y-2">
-                <label class="block text-[10px] font-bold text-gray-500">OBJETS DE LA CHAMBRE</label>
-                <div class="flex gap-2">
-                    <select id="furnitureSelector" class="flex-1 bg-white border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
-                        <!-- options via JS -->
+              <div id="furnitureSection" class="mb-3 space-y-2">
+                  <label class="block text-[10px] font-bold text-gray-500">OBJETS DE LA CHAMBRE</label>
+                  <div class="flex gap-2">
+                      <select id="furnitureSelector" class="flex-1 bg-white border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                          <!-- options via JS -->
                     </select>
                     <button id="addFurnitureBtn" class="px-2 bg-blue-600 text-white rounded text-xs font-bold hover:bg-blue-700">Ajouter</button>
                     <button id="removeFurnitureBtn" class="px-2 bg-red-50 text-red-600 border border-red-200 rounded text-xs font-bold hover:bg-red-100">Suppr.</button>
-                </div>
-            </div>
+                  </div>
+              </div>
 
-            <div class="mb-3">
-                <label class="block text-[10px] font-bold text-gray-500 mb-1">Dupliquer vers un étage</label>
-                <div class="flex gap-2 items-center">
-                    <input id="duplicateFloorTarget" type="number" min="0" class="flex-1 bg-white border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
+              <div class="mb-3 space-y-2">
+                  <div class="flex items-center justify-between">
+                      <label class="block text-[10px] font-bold text-gray-500">CÂBLAGE DISJONCTEURS</label>
+                      <span class="badge bg-amber-50 text-amber-700 border border-amber-100"><i data-lucide="zap" size="14"></i>Flux</span>
+                  </div>
+                  <button id="toggleCablesBtn" class="w-full py-2 bg-white border border-gray-200 rounded text-xs font-bold text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2">
+                      <i data-lucide="eye" size="14"></i>Masquer le câblage
+                  </button>
+              </div>
+
+              <div id="breakerSection" class="mb-3 space-y-2 hidden">
+                  <div class="flex items-center justify-between">
+                      <span class="block text-[10px] font-bold text-gray-500">BOÎTIER DISJONCTEURS</span>
+                      <span class="text-[10px] text-emerald-600 font-semibold flex items-center gap-1"><i data-lucide="circuit-board" size="14"></i>Chambres alimentées</span>
+                  </div>
+                  <div class="bg-white border border-gray-200 rounded-lg p-2 space-y-2 text-[10px] text-gray-700">
+                      <div class="flex items-center justify-between">
+                          <span class="text-gray-500">Sélectionner les chambres</span>
+                          <button id="breakerSelectAll" class="px-2 py-1 bg-emerald-50 text-emerald-700 border border-emerald-100 rounded hover:bg-emerald-100">Tout</button>
+                      </div>
+                      <div id="breakerRoomsList" class="max-h-32 overflow-y-auto space-y-1"></div>
+                  </div>
+              </div>
+
+              <div class="mb-3">
+                  <label class="block text-[10px] font-bold text-gray-500 mb-1">Dupliquer vers un étage</label>
+                  <div class="flex gap-2 items-center">
+                      <input id="duplicateFloorTarget" type="number" min="0" class="flex-1 bg-white border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
                     <span class="text-[10px] text-gray-400">RDC=0</span>
                 </div>
             </div>
@@ -738,20 +762,110 @@
                 group.userData = { isFurniture: true, type: 'door', name: 'Porte', isWallMounted: true, defaultY: 0 };
                 return group;
             },
-            window: () => {
-                const group = new THREE.Group();
-                const h = CONFIG.floorHeight;
-                // Cadre
-                const frame = new THREE.Mesh(new THREE.BoxGeometry(1.8, 1.4, 0.3), new THREE.MeshStandardMaterial({color: '#475569'}));
+              window: () => {
+                  const group = new THREE.Group();
+                  const h = CONFIG.floorHeight;
+                  // Cadre
+                  const frame = new THREE.Mesh(new THREE.BoxGeometry(1.8, 1.4, 0.3), new THREE.MeshStandardMaterial({color: '#475569'}));
                 // Vitre
                 const glass = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.2, 0.32), new THREE.MeshStandardMaterial({color: '#bae6fd', transparent: true, opacity: 0.5}));
-                
-                group.add(frame, glass);
-                // Y par défaut à 1.5m du sol (centre de la fenêtre)
-                group.userData = { isFurniture: true, type: 'window', name: 'Fenêtre', isWallMounted: true, defaultY: 1.5 };
-                return group;
-            }
-        };
+
+                  group.add(frame, glass);
+                  // Y par défaut à 1.5m du sol (centre de la fenêtre)
+                  group.userData = { isFurniture: true, type: 'window', name: 'Fenêtre', isWallMounted: true, defaultY: 1.5 };
+                  return group;
+              },
+              balcony: () => {
+                  const group = new THREE.Group();
+                  const platform = new THREE.Mesh(new THREE.BoxGeometry(2, 0.2, 1.2), new THREE.MeshStandardMaterial({ color: '#94a3b8' }));
+                  platform.position.y = 0.1;
+                  const railMat = new THREE.MeshStandardMaterial({ color: '#111827' });
+                  const rail = new THREE.Mesh(new THREE.BoxGeometry(2, 1, 0.1), railMat);
+                  rail.position.set(0, 0.9, 0.55);
+                  group.add(platform, rail);
+                  group.userData = { isFurniture: true, type: 'balcony', name: 'Balcon', isWallMounted: true, defaultY: 0, wallOffset: 0.8, dims: {x:2, z:1.2} };
+                  return group;
+              },
+              frenchDoor: () => {
+                  const group = new THREE.Group();
+                  const frame = new THREE.Mesh(new THREE.BoxGeometry(1.8, 2.6, 0.25), new THREE.MeshStandardMaterial({ color: '#475569' }));
+                  const glass = new THREE.Mesh(new THREE.BoxGeometry(1.6, 2.4, 0.2), new THREE.MeshStandardMaterial({ color: '#bae6fd', transparent: true, opacity: 0.5 }));
+                  glass.position.z = 0.02;
+                  group.add(frame, glass);
+                  group.userData = { isFurniture: true, type: 'frenchDoor', name: 'Porte-fenêtre', isWallMounted: true, defaultY: 0, dims: {x:1.8, z:0.3} };
+                  return group;
+              },
+              innerWall: () => {
+                  const mesh = new THREE.Mesh(new THREE.BoxGeometry(0.2, CONFIG.floorHeight, 3), new THREE.MeshStandardMaterial({ color: '#cbd5e1' }));
+                  mesh.position.y = CONFIG.floorHeight / 2;
+                  mesh.userData = { isFurniture: true, type: 'innerWall', name: 'Mur intérieur', dims: {x:0.2, z:3}, defaultY: mesh.position.y };
+                  return mesh;
+              },
+              wcDoor: () => {
+                  const group = new THREE.Group();
+                  const h = CONFIG.floorHeight * 0.9;
+                  const frame = new THREE.Mesh(new THREE.BoxGeometry(0.9, h, 0.25), new THREE.MeshStandardMaterial({ color: '#cbd5e1' }));
+                  frame.position.y = h / 2;
+                  const leaf = new THREE.Mesh(new THREE.BoxGeometry(0.7, h * 0.9, 0.3), new THREE.MeshStandardMaterial({ color: '#94a3b8' }));
+                  leaf.position.set(0, h / 2, 0);
+                  group.add(frame, leaf);
+                  group.userData = { isFurniture: true, type: 'wcDoor', name: 'Porte WC', isWallMounted: true, defaultY: 0, dims: {x:0.9, z:0.3} };
+                  return group;
+              },
+              mirror: () => {
+                  const frame = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.6, 0.08), new THREE.MeshStandardMaterial({ color: '#0f172a' }));
+                  const glass = new THREE.Mesh(new THREE.BoxGeometry(1.0, 1.4, 0.04), new THREE.MeshStandardMaterial({ color: '#e2e8f0', metalness: 0.8, roughness: 0.1, envMapIntensity: 0.9 }));
+                  glass.position.z = 0.03;
+                  const group = new THREE.Group();
+                  group.add(frame, glass);
+                  group.userData = { isFurniture: true, type: 'mirror', name: 'Miroir', isWallMounted: true, defaultY: 1.2, dims: {x:1.2, z:0.1} };
+                  return group;
+              },
+              wallLamp: () => {
+                  const base = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.2, 12), new THREE.MeshStandardMaterial({ color: '#0f172a' }));
+                  const shade = new THREE.Mesh(new THREE.SphereGeometry(0.25, 16, 16, 0, Math.PI), new THREE.MeshStandardMaterial({ color: '#fde68a', emissive: '#fbbf24', emissiveIntensity: 0.8 }));
+                  shade.position.y = 0.25;
+                  const group = new THREE.Group();
+                  group.add(base, shade);
+                  group.userData = { isFurniture: true, type: 'wallLamp', name: 'Lampe murale', isWallMounted: true, defaultY: 1.6, dims: {x:0.3, z:0.3} };
+                  return group;
+              },
+              wallNeon: () => {
+                  const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 1.6, 12), new THREE.MeshStandardMaterial({ color: '#a5f3fc', emissive: '#22d3ee', emissiveIntensity: 1.1 }));
+                  tube.rotation.z = Math.PI / 2;
+                  const mount = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.12, 0.18), new THREE.MeshStandardMaterial({ color: '#0f172a' }));
+                  const group = new THREE.Group();
+                  group.add(mount, tube);
+                  group.userData = { isFurniture: true, type: 'wallNeon', name: 'Néon mural', isWallMounted: true, defaultY: 1.8, dims: {x:1.8, z:0.2} };
+                  return group;
+              },
+              heater: () => {
+                  const body = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.7, 0.25), new THREE.MeshStandardMaterial({ color: '#e5e7eb' }));
+                  body.position.y = 0.35;
+                  const grille = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.1, 0.05), new THREE.MeshStandardMaterial({ color: '#94a3b8' }));
+                  grille.position.set(0, 0.65, 0.13);
+                  const group = new THREE.Group();
+                  group.add(body, grille);
+                  group.userData = { isFurniture: true, type: 'heater', name: 'Chauffage', isWallMounted: true, defaultY: 0.35, dims: {x:1.2, z:0.25} };
+                  return group;
+              },
+              breakerBox: () => {
+                  const box = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1, 0.3), new THREE.MeshStandardMaterial({ color: '#0f172a' }));
+                  const door = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.95, 0.05), new THREE.MeshStandardMaterial({ color: '#1f2937', opacity: 0.7, transparent: true }));
+                  door.position.z = 0.15;
+                  const switches = new THREE.Group();
+                  const colors = ['#22c55e', '#f97316', '#38bdf8', '#eab308'];
+                  colors.forEach((c, i) => {
+                      const sw = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.12), new THREE.MeshStandardMaterial({ color: c, emissive: c, emissiveIntensity: 0.3 }));
+                      sw.position.set(-0.3 + i * 0.2, 0.15, 0.16);
+                      switches.add(sw);
+                  });
+                  const group = new THREE.Group();
+                  group.add(box, door, switches);
+                  group.userData = { isFurniture: true, type: 'breakerBox', name: 'Boîtier disjoncteurs', isWallMounted: true, defaultY: 1.3, dims: {x:0.8, z:0.3}, feeds: [], isBreaker: true };
+                  return group;
+              }
+          };
 
         const ExteriorFactory = {
             pelouse: () => {
@@ -874,36 +988,67 @@
         // --- MAIN APPLICATION ---
         class HotelArchitect {
             constructor() {
-                this.scene = null; this.camera = null; this.renderer = null;
-                this.orbit = null; this.control = null; this.raycaster = new THREE.Raycaster(); this.pointer = new THREE.Vector2();
-                this.floors = { current: 0, max: 0 }; this.roomCounter = 1;
-                this.selectedObject = null; this.isGlobalView = false; this.colorTarget = 'block'; this.labelsVisible = true;
-                this.furnitureChoices = [
-                    { value: 'crib', label: 'Lit bébé' },
-                    { value: 'singleBed', label: 'Lit simple (1 personne)' },
-                    { value: 'doubleBed', label: 'Lit double (2 personnes)' },
-                    { value: 'bunkBed', label: 'Lit superposé (mixte)' },
-                    { value: 'desk', label: 'Bureau' },
-                    { value: 'chair', label: 'Chaise' },
-                    { value: 'table', label: 'Table' },
-                    { value: 'shower', label: 'Douche' },
-                    { value: 'bathtub', label: 'Baignoire' },
-                    { value: 'wardrobe', label: 'Armoire' },
-                    { value: 'window', label: 'Fenêtre' },
-                    { value: 'door', label: 'Porte' },
-                    { value: 'toilet', label: 'WC' },
-                    { value: 'sink', label: 'Évier' }
-                ];
+                  this.scene = null; this.camera = null; this.renderer = null;
+                  this.orbit = null; this.control = null; this.raycaster = new THREE.Raycaster(); this.pointer = new THREE.Vector2();
+                  this.floors = { current: 0, max: 0 }; this.roomCounter = 1;
+                  this.selectedObject = null; this.isGlobalView = false; this.colorTarget = 'block'; this.labelsVisible = true;
+                  this.cablesVisible = true; this.cableMaterials = [];
+                  this.breakerCableGroup = null;
+                  this.furnitureChoices = [
+                      { value: 'crib', label: 'Lit bébé' },
+                      { value: 'singleBed', label: 'Lit simple (1 personne)' },
+                      { value: 'doubleBed', label: 'Lit double (2 personnes)' },
+                      { value: 'bunkBed', label: 'Lit superposé (mixte)' },
+                      { value: 'desk', label: 'Bureau' },
+                      { value: 'chair', label: 'Chaise' },
+                      { value: 'table', label: 'Table' },
+                      { value: 'shower', label: 'Douche' },
+                      { value: 'bathtub', label: 'Baignoire' },
+                      { value: 'wardrobe', label: 'Armoire' },
+                      { value: 'window', label: 'Fenêtre' },
+                      { value: 'door', label: 'Porte' },
+                      { value: 'toilet', label: 'WC' },
+                      { value: 'sink', label: 'Évier' },
+                      { value: 'balcony', label: 'Balcon' },
+                      { value: 'frenchDoor', label: 'Porte-fenêtre' },
+                      { value: 'innerWall', label: 'Mur intérieur' },
+                      { value: 'wcDoor', label: 'Porte WC' },
+                      { value: 'mirror', label: 'Miroir' },
+                      { value: 'wallLamp', label: 'Lampe murale' },
+                      { value: 'wallNeon', label: 'Néon mural' },
+                      { value: 'heater', label: 'Chauffage' },
+                      { value: 'breakerBox', label: 'Boîtier disjoncteurs' }
+                  ];
                 this.stateManager = new StateManager(this); this.gridHelper = null;
                 this.init();
             }
 
-            getFloorY(floorIndex) {
-                return floorIndex * (CONFIG.floorHeight + CONFIG.floorGap);
-            }
+              getFloorY(floorIndex) {
+                  return floorIndex * (CONFIG.floorHeight + CONFIG.floorGap);
+              }
 
-            init() {
-                this.scene = new THREE.Scene();
+              makeRoomId() {
+                  return 'room-' + Math.random().toString(36).slice(2, 7) + Date.now().toString(36);
+              }
+
+              ensureRoomId(room, force = false) {
+                  if(!room || room.userData?.type !== 'Chambre') return;
+                  if(force || !room.userData.roomId) room.userData.roomId = this.makeRoomId();
+              }
+
+              listRooms() {
+                  const rooms = [];
+                  this.scene.traverse(o => { if(o.userData?.type === 'Chambre') rooms.push(o); });
+                  return rooms;
+              }
+
+              getRoomById(id) {
+                  if(!id) return null;
+                  return this.listRooms().find(r => r.userData?.roomId === id) || null;
+              }
+
+              init() {
+                  this.scene = new THREE.Scene();
                 this.scene.background = new THREE.Color('#e0f2fe');
                 this.scene.fog = new THREE.FogExp2(0xe0f2fe, 0.008);
                 this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -925,12 +1070,17 @@
                 this.gridHelper.position.y = this.getFloorY(this.floors.current);
                 this.scene.add(this.gridHelper);
                 const planeGeo = new THREE.PlaneGeometry(200, 200);
-                const planeMat = new THREE.ShadowMaterial({ opacity: 0.05, color: 0x000000 });
-                const ground = new THREE.Mesh(planeGeo, planeMat);
-                ground.rotation.x = -Math.PI / 2; ground.name = "Ground"; ground.receiveShadow = true; this.scene.add(ground);
+                  const planeMat = new THREE.ShadowMaterial({ opacity: 0.05, color: 0x000000 });
+                  const ground = new THREE.Mesh(planeGeo, planeMat);
+                  ground.rotation.x = -Math.PI / 2; ground.name = "Ground"; ground.receiveShadow = true; this.scene.add(ground);
 
-                this.orbit = new OrbitControls(this.camera, this.renderer.domElement);
-                this.orbit.enableDamping = true; this.orbit.dampingFactor = 0.05; this.orbit.maxPolarAngle = Math.PI / 2 - 0.05;
+                  this.breakerCableGroup = new THREE.Group();
+                  this.breakerCableGroup.name = 'BreakerCables';
+                  this.breakerCableGroup.visible = this.cablesVisible;
+                  this.scene.add(this.breakerCableGroup);
+
+                  this.orbit = new OrbitControls(this.camera, this.renderer.domElement);
+                  this.orbit.enableDamping = true; this.orbit.dampingFactor = 0.05; this.orbit.maxPolarAngle = Math.PI / 2 - 0.05;
 
                 this.control = new TransformControls(this.camera, this.renderer.domElement);
                 this.control.addEventListener('dragging-changed', (e) => { this.orbit.enabled = !e.value; });
@@ -942,10 +1092,11 @@
                 document.addEventListener('keydown', (e) => this.onKeyDown(e));
                 this.renderer.domElement.addEventListener('pointerdown', (e) => this.onPointerDown(e));
                 
-                this.bindUI(); this.initColorPalette();
-                this.renderer.setAnimationLoop(() => this.animate());
-                lucide.createIcons();
-                document.getElementById('loader').style.opacity = 0; setTimeout(() => document.getElementById('loader').remove(), 500);
+                  this.bindUI(); this.initColorPalette();
+                  this.renderer.setAnimationLoop(() => this.animate());
+                  lucide.createIcons();
+                  this.updateCableToggleButton();
+                  document.getElementById('loader').style.opacity = 0; setTimeout(() => document.getElementById('loader').remove(), 500);
 
                 this.createBlock('room');
                 this.updateUI();
@@ -981,16 +1132,21 @@
                 ['X','Y','Z'].forEach(axis => {
                     document.getElementById('labelPos'+axis).onchange = (e) => this.updateLabelOffset(axis.toLowerCase(), parseFloat(e.target.value));
                 });
-                document.getElementById('toggleDoorLabelBtn').onclick = () => this.toggleDoorLabel();
-                document.getElementById('toggleLabelBtn').onclick = () => this.toggleSelectedLabel();
-                document.getElementById('toggleAllLabelsBtn').onclick = () => this.toggleAllLabels();
-                this.populateFurnitureSelector();
-                document.getElementById('addFurnitureBtn').onclick = () => this.addFurnitureFromMenu();
-                document.getElementById('removeFurnitureBtn').onclick = () => this.removeFurnitureFromMenu();
-                ['X','Y','Z'].forEach(axis => {
-                    document.getElementById('furnScale'+axis).onchange = (e) => this.updateFurnitureScale(axis.toLowerCase(), parseFloat(e.target.value));
-                });
-                document.getElementById('furnRotationY').onchange = (e) => this.updateFurnitureRotation(parseFloat(e.target.value));
+                  document.getElementById('toggleDoorLabelBtn').onclick = () => this.toggleDoorLabel();
+                  document.getElementById('toggleLabelBtn').onclick = () => this.toggleSelectedLabel();
+                  document.getElementById('toggleAllLabelsBtn').onclick = () => this.toggleAllLabels();
+                  this.populateFurnitureSelector();
+                  document.getElementById('addFurnitureBtn').onclick = () => this.addFurnitureFromMenu();
+                  document.getElementById('removeFurnitureBtn').onclick = () => this.removeFurnitureFromMenu();
+                  document.getElementById('toggleCablesBtn').onclick = () => this.toggleBreakerCables();
+                  document.getElementById('breakerSelectAll').onclick = () => this.selectAllBreakerRooms();
+                  document.getElementById('breakerRoomsList').addEventListener('change', (e) => {
+                      if(e.target?.dataset?.roomId) this.setBreakerFeed(this.selectedObject, e.target.dataset.roomId, e.target.checked);
+                  });
+                  ['X','Y','Z'].forEach(axis => {
+                      document.getElementById('furnScale'+axis).onchange = (e) => this.updateFurnitureScale(axis.toLowerCase(), parseFloat(e.target.value));
+                  });
+                  document.getElementById('furnRotationY').onchange = (e) => this.updateFurnitureRotation(parseFloat(e.target.value));
                 this.setColorTarget('block');
                 this.updateSelectionChips();
             }
@@ -1048,14 +1204,15 @@
                     const furnitureGroup = new THREE.Group();
                     furnitureGroup.name = "Furniture";
                     
-                    if (furnitureList) {
-                        furnitureList.forEach(item => {
-                            const fMesh = FurnitureFactory[item.type]();
-                            fMesh.position.fromArray(item.pos);
-                            fMesh.rotation.fromArray(item.rot);
-                            furnitureGroup.add(fMesh);
-                        });
-                    } else {
+                      if (furnitureList) {
+                          furnitureList.forEach(item => {
+                              const fMesh = FurnitureFactory[item.type]();
+                              fMesh.position.fromArray(item.pos);
+                              fMesh.rotation.fromArray(item.rot);
+                              if(item.userData) fMesh.userData = {...fMesh.userData, ...item.userData};
+                              furnitureGroup.add(fMesh);
+                          });
+                      } else {
                         // Layout Par défaut
                         const bed = FurnitureFactory.bed(); bed.position.set(0, 0, -1.5); furnitureGroup.add(bed);
                         const shower = FurnitureFactory.shower(); shower.position.set(-1.3, 0, -2.3); furnitureGroup.add(shower);
@@ -1085,12 +1242,13 @@
                         labelText: this.roomCounter.toString(),
                         labelColor: CONFIG.defaultLabelColor,
                         textColor: CONFIG.defaultTextColor,
-                        labelScale: CONFIG.defaultLabelScale,
-                        labelOffset: {...CONFIG.defaultLabelOffset},
-                        labelVisible: true,
-                        doorLabelVisible: true,
-                        wallColor: '#6366f1'
-                    };
+                          labelScale: CONFIG.defaultLabelScale,
+                          labelOffset: {...CONFIG.defaultLabelOffset},
+                          labelVisible: true,
+                          doorLabelVisible: true,
+                          roomId: this.makeRoomId(),
+                          wallColor: '#6366f1'
+                      };
                     this.roomCounter++;
                 }
                 else if (type === 'corridor') {
@@ -1308,14 +1466,122 @@
                 }
             }
 
-            refreshFurnitureUI(obj) {
-                if(!obj || !obj.userData.isFurniture) return;
-                document.getElementById('furnScaleX').value = obj.scale.x.toFixed(2);
-                document.getElementById('furnScaleY').value = obj.scale.y.toFixed(2);
-                document.getElementById('furnScaleZ').value = obj.scale.z.toFixed(2);
-                const deg = THREE.MathUtils.radToDeg(obj.rotation.y);
-                document.getElementById('furnRotationY').value = Math.round(deg * 100) / 100;
-            }
+              refreshFurnitureUI(obj) {
+                  if(!obj || !obj.userData.isFurniture) return;
+                  document.getElementById('furnScaleX').value = obj.scale.x.toFixed(2);
+                  document.getElementById('furnScaleY').value = obj.scale.y.toFixed(2);
+                  document.getElementById('furnScaleZ').value = obj.scale.z.toFixed(2);
+                  const deg = THREE.MathUtils.radToDeg(obj.rotation.y);
+                  document.getElementById('furnRotationY').value = Math.round(deg * 100) / 100;
+              }
+
+              refreshBreakerUI(obj) {
+                  const section = document.getElementById('breakerSection');
+                  const list = document.getElementById('breakerRoomsList');
+                  if(!section || !list) return;
+                  if(!obj || !obj.userData?.isBreaker) {
+                      section.classList.add('hidden');
+                      list.innerHTML = '';
+                      return;
+                  }
+
+                  let roomParent = obj;
+                  while(roomParent && !roomParent.userData?.type && roomParent.parent) roomParent = roomParent.parent;
+                  this.ensureRoomId(roomParent);
+                  const rooms = this.listRooms();
+                  const feeds = obj.userData.feeds || [];
+                  list.innerHTML = '';
+                  rooms.sort((a,b) => (a.userData.name||'').localeCompare(b.userData.name||''));
+                  rooms.forEach(room => {
+                      this.ensureRoomId(room);
+                      const id = room.userData.roomId;
+                      const wrapper = document.createElement('label');
+                      wrapper.className = 'flex items-center gap-2 bg-gray-50 border border-gray-200 rounded px-2 py-1';
+                      const input = document.createElement('input');
+                      input.type = 'checkbox';
+                      input.dataset.roomId = id;
+                      input.checked = feeds.includes(id);
+                      input.className = 'accent-emerald-500';
+                      const text = document.createElement('span');
+                      text.className = 'flex-1 text-[11px] text-gray-700';
+                      text.textContent = `${room.userData.name || 'Chambre'} (${this.formatFloorLabel(room.userData.floor || 0)})`;
+                      wrapper.appendChild(input);
+                      wrapper.appendChild(text);
+                      list.appendChild(wrapper);
+                  });
+                  if(rooms.length === 0) list.innerHTML = '<div class="text-[10px] text-gray-400">Aucune chambre disponible</div>';
+                  section.classList.remove('hidden');
+              }
+
+              updateCableToggleButton() {
+                  const btn = document.getElementById('toggleCablesBtn');
+                  if(!btn) return;
+                  btn.innerHTML = `<i data-lucide="${this.cablesVisible ? 'eye-off' : 'eye'}" size="14"></i>${this.cablesVisible ? 'Masquer le câblage' : 'Afficher le câblage'}`;
+                  lucide.createIcons({ root: btn });
+              }
+
+              toggleBreakerCables() {
+                  this.cablesVisible = !this.cablesVisible;
+                  if(this.breakerCableGroup) this.breakerCableGroup.visible = this.cablesVisible;
+                  this.updateCableToggleButton();
+                  this.stateManager.snapshot();
+              }
+
+              setBreakerFeed(breaker, roomId, enabled) {
+                  if(!breaker?.userData?.isBreaker) return;
+                  if(!breaker.userData.feeds) breaker.userData.feeds = [];
+                  const exists = breaker.userData.feeds.includes(roomId);
+                  if(enabled && !exists) breaker.userData.feeds.push(roomId);
+                  if(!enabled && exists) breaker.userData.feeds = breaker.userData.feeds.filter(id => id !== roomId);
+                  this.updateBreakerCables();
+                  this.stateManager.snapshot();
+              }
+
+              selectAllBreakerRooms() {
+                  const breaker = this.selectedObject;
+                  if(!breaker?.userData?.isBreaker) return;
+                  const rooms = this.listRooms();
+                  rooms.forEach(r => this.ensureRoomId(r));
+                  breaker.userData.feeds = rooms.map(r => r.userData.roomId);
+                  this.updateBreakerCables();
+                  this.refreshBreakerUI(breaker);
+                  this.stateManager.snapshot();
+              }
+
+              updateBreakerCables() {
+                  if(!this.breakerCableGroup) return;
+                  this.breakerCableGroup.children.forEach(child => { child.geometry?.dispose?.(); child.material?.dispose?.(); });
+                  this.breakerCableGroup.clear();
+                  this.cableMaterials = [];
+                  const rooms = this.listRooms();
+                  rooms.forEach(r => this.ensureRoomId(r));
+                  const roomIds = rooms.map(r => r.userData.roomId);
+
+                  this.scene.traverse(obj => {
+                      if(!obj.userData?.isBreaker) return;
+                      if(!Array.isArray(obj.userData.feeds)) obj.userData.feeds = [];
+                      obj.userData.feeds = obj.userData.feeds.filter(id => roomIds.includes(id));
+                      obj.userData.feeds.forEach(id => {
+                          const room = rooms.find(r => r.userData.roomId === id);
+                          if(!room) return;
+                          const start = obj.getWorldPosition(new THREE.Vector3());
+                          start.y += 1.2;
+                          const end = room.getWorldPosition(new THREE.Vector3());
+                          end.y = this.getFloorY(room.userData.floor || 0) + CONFIG.floorHeight * 0.6;
+                          const mid = start.clone().lerp(end, 0.5);
+                          mid.y += 1.5;
+                          const geometry = new THREE.BufferGeometry().setFromPoints([start, mid, end]);
+                          const material = new THREE.LineDashedMaterial({ color: 0xf97316, dashSize: 0.8, gapSize: 0.35, transparent: true, opacity: 0.9 });
+                          const line = new THREE.Line(geometry, material);
+                          line.computeLineDistances();
+                          line.userData = { isCable: true, breakerId: obj.uuid, targetId: id };
+                          this.breakerCableGroup.add(line);
+                          this.cableMaterials.push(material);
+                      });
+                  });
+                  this.breakerCableGroup.visible = this.cablesVisible;
+                  this.updateCableToggleButton();
+              }
 
             updateLabelScale(val) {
                 if(!this.selectedObject || this.selectedObject.userData.isFurniture) return;
@@ -1410,13 +1676,15 @@
                 if(!container) { container = new THREE.Group(); container.name = 'Furniture'; target.add(container); }
                 const item = factory();
                 item.position.set(0, item.userData.defaultY || 0, 0);
-                container.add(item);
-                this.snapObject(item);
-                this.refreshDoorLabels(target);
-                this.selectObject(item);
-                this.stateManager.snapshot();
-                this.showToast(`${item.userData.name} ajouté`, 'success');
-            }
+                  container.add(item);
+                  this.snapObject(item);
+                  this.refreshDoorLabels(target);
+                  this.selectObject(item);
+                  this.stateManager.snapshot();
+                  this.updateBreakerCables();
+                  this.refreshBreakerUI(this.selectedObject);
+                  this.showToast(`${item.userData.name} ajouté`, 'success');
+              }
 
             removeFurnitureFromMenu() {
                 const target = this.getTargetRoom();
@@ -1426,13 +1694,14 @@
                 if(!group) { this.showToast('Aucun mobilier', 'error'); return; }
                 for(let i = group.children.length - 1; i >=0; i--) {
                     if(group.children[i].userData.type === type) {
-                        group.remove(group.children[i]);
-                        this.refreshDoorLabels(target);
-                        this.selectObject(target);
-                        this.stateManager.snapshot();
-                        this.showToast('Objet retiré', 'info');
-                        return;
-                    }
+                          group.remove(group.children[i]);
+                          this.refreshDoorLabels(target);
+                          this.selectObject(target);
+                          this.stateManager.snapshot();
+                          this.updateBreakerCables();
+                          this.showToast('Objet retiré', 'info');
+                          return;
+                      }
                 }
                 this.showToast('Aucun objet de ce type', 'error');
             }
@@ -1466,16 +1735,25 @@
                         } else if (min === distS) { // Mur Sud
                             obj.position.z = d - margin; obj.rotation.y = 0;
                             obj.position.x = Math.max(-w+0.8, Math.min(w-0.8, obj.position.x));
-                        } else if (min === distE) { // Mur Est
-                            obj.position.x = w - margin; obj.rotation.y = Math.PI/2;
-                            obj.position.z = Math.max(-d+0.8, Math.min(d-0.8, obj.position.z));
-                        } else { // Mur Ouest
-                            obj.position.x = -w + margin; obj.rotation.y = Math.PI/2;
-                            obj.position.z = Math.max(-d+0.8, Math.min(d-0.8, obj.position.z));
-                        }
-                        
-                    } else {
-                        // 3. MEUBLES CLASSIQUES
+                          } else if (min === distE) { // Mur Est
+                              obj.position.x = w - margin; obj.rotation.y = Math.PI/2;
+                              obj.position.z = Math.max(-d+0.8, Math.min(d-0.8, obj.position.z));
+                          } else { // Mur Ouest
+                              obj.position.x = -w + margin; obj.rotation.y = Math.PI/2;
+                              obj.position.z = Math.max(-d+0.8, Math.min(d-0.8, obj.position.z));
+                          }
+
+                          if(obj.userData.wallOffset) {
+                              const dir = new THREE.Vector3(
+                                  min === distE ? 1 : min === distW ? -1 : 0,
+                                  0,
+                                  min === distS ? 1 : min === distN ? -1 : 0
+                              );
+                              obj.position.addScaledVector(dir, obj.userData.wallOffset);
+                          }
+
+                      } else {
+                          // 3. MEUBLES CLASSIQUES
                         if(this.control.mode === 'translate') {
                             obj.position.x = Math.round(obj.position.x / 0.1) * 0.1;
                             obj.position.z = Math.round(obj.position.z / 0.1) * 0.1;
@@ -1496,25 +1774,26 @@
                         const halfX = (dimsX * cosY + dimsZ * sinY) / 2;
                         const halfZ = (dimsZ * cosY + dimsX * sinY) / 2;
 
-                        const minX = - (roomW / 2) + halfX + padding; const maxX = (roomW / 2) - halfX - padding;
-                        const minZ = - (roomD / 2) + halfZ + padding; const maxZ = (roomD / 2) - halfZ - padding;
+                          const minX = - (roomW / 2) + halfX + padding; const maxX = (roomW / 2) - halfX - padding;
+                          const minZ = - (roomD / 2) + halfZ + padding; const maxZ = (roomD / 2) - halfZ - padding;
 
-                        obj.position.x = Math.max(minX, Math.min(maxX, obj.position.x));
-                        obj.position.z = Math.max(minZ, Math.min(maxZ, obj.position.z));
-                    }
+                          obj.position.x = Math.max(minX, Math.min(maxX, obj.position.x));
+                          obj.position.z = Math.max(minZ, Math.min(maxZ, obj.position.z));
+                      }
 
-                } else {
+                  } else {
                     // 4. DÉPLACEMENT STRUCTURE
                     if(this.control.mode === 'translate') {
                         obj.position.x = Math.round(obj.position.x / CONFIG.gridSize) * CONFIG.gridSize;
                         obj.position.z = Math.round(obj.position.z / CONFIG.gridSize) * CONFIG.gridSize;
                         obj.position.y = this.getFloorY(obj.userData.floor || 0);
-                    } else if (this.control.mode === 'rotate') {
-                        obj.rotation.x = 0; obj.rotation.z = 0;
-                        obj.rotation.y = Math.round(obj.rotation.y / (Math.PI/2)) * (Math.PI/2);
-                    }
-                }
-            }
+                      } else if (this.control.mode === 'rotate') {
+                          obj.rotation.x = 0; obj.rotation.z = 0;
+                          obj.rotation.y = Math.round(obj.rotation.y / (Math.PI/2)) * (Math.PI/2);
+                      }
+                  }
+                  if(obj.userData?.isBreaker || obj.userData?.type === 'Chambre') this.updateBreakerCables();
+              }
 
             // --- EVENTS ---
             onPointerDown(event) {
@@ -1529,7 +1808,7 @@
 
                 // --- PASSE 1 : RECHERCHE DE MEUBLES (PRIORITÉ ABSOLUE) ---
                 for (let hit of intersects) {
-                    if (hit.object.type === 'Sprite' || hit.object.name === 'Ground') continue;
+                    if (hit.object.type === 'Sprite' || hit.object.name === 'Ground' || hit.object.userData?.isCable) continue;
                     
                     let node = hit.object;
                     let foundFurniture = null;
@@ -1550,7 +1829,7 @@
                 // --- PASSE 2 : SI AUCUN MEUBLE, RECHERCHE DE STRUCTURE ---
                 if (!target) {
                     for (let hit of intersects) {
-                        if (hit.object.type === 'Sprite' || hit.object.name === 'Ground') continue;
+                        if (hit.object.type === 'Sprite' || hit.object.name === 'Ground' || hit.object.userData?.isCable) continue;
                         let node = hit.object;
                         let foundStructure = null;
                         while(node && node.parent) {
@@ -1570,15 +1849,15 @@
                 this.selectObject(target);
             }
 
-            selectObject(obj) {
-                this.selectedObject = obj;
-                const panel = document.getElementById('propPanel');
-                const dupInput = document.getElementById('duplicateFloorTarget');
+              selectObject(obj) {
+                  this.selectedObject = obj;
+                  const panel = document.getElementById('propPanel');
+                  const dupInput = document.getElementById('duplicateFloorTarget');
 
-                if (obj) {
-                    this.control.attach(obj);
-                    panel.classList.remove('opacity-50', 'pointer-events-none', 'scale-95');
-                    panel.classList.add('opacity-100', 'scale-100');
+                  if (obj) {
+                      this.control.attach(obj);
+                      panel.classList.remove('opacity-50', 'pointer-events-none', 'scale-95');
+                      panel.classList.add('opacity-100', 'scale-100');
                     document.getElementById('propName').value = obj.userData.name || '';
                     if(!obj.userData.isFurniture) this.setColorTarget(this.colorTarget);
 
@@ -1586,30 +1865,33 @@
                         document.getElementById('propTitle').innerText = "MOBILIER";
                         document.getElementById('colorSection').classList.add('hidden');
                         document.getElementById('sizeSection').classList.add('hidden');
-                        document.getElementById('labelSection').classList.add('hidden');
-                        document.getElementById('furnitureSection').classList.add('hidden');
-                        document.getElementById('furnitureTransformSection').classList.remove('hidden');
-                        this.refreshFurnitureUI(obj);
-                        this.control.showY = true;
-                    } else {
-                        document.getElementById('propTitle').innerText = "PROPRIÉTÉS";
-                        document.getElementById('colorSection').classList.remove('hidden');
-                        document.getElementById('sizeSection').classList.remove('hidden');
-                        document.getElementById('labelSection').classList.remove('hidden');
-                        document.getElementById('furnitureSection').classList.remove('hidden');
-                        document.getElementById('furnitureTransformSection').classList.add('hidden');
-                        this.refreshLabelUI(obj);
-                        this.control.showY = false;
-                    }
-                    if(dupInput) dupInput.value = obj.userData.floor ?? this.floors.current;
-                } else {
-                    this.control.detach();
-                    panel.classList.add('opacity-50', 'pointer-events-none', 'scale-95');
-                    document.getElementById('furnitureTransformSection').classList.add('hidden');
-                    if(dupInput) dupInput.value = this.floors.current;
-                }
-                this.updateSelectionChips();
-            }
+                          document.getElementById('labelSection').classList.add('hidden');
+                          document.getElementById('furnitureSection').classList.add('hidden');
+                          document.getElementById('furnitureTransformSection').classList.remove('hidden');
+                          this.refreshFurnitureUI(obj);
+                          this.control.showY = true;
+                          this.refreshBreakerUI(obj);
+                      } else {
+                          document.getElementById('propTitle').innerText = "PROPRIÉTÉS";
+                          document.getElementById('colorSection').classList.remove('hidden');
+                          document.getElementById('sizeSection').classList.remove('hidden');
+                          document.getElementById('labelSection').classList.remove('hidden');
+                          document.getElementById('furnitureSection').classList.remove('hidden');
+                          document.getElementById('furnitureTransformSection').classList.add('hidden');
+                          this.refreshLabelUI(obj);
+                          this.control.showY = false;
+                          this.refreshBreakerUI(null);
+                      }
+                      if(dupInput) dupInput.value = obj.userData.floor ?? this.floors.current;
+                  } else {
+                      this.control.detach();
+                      panel.classList.add('opacity-50', 'pointer-events-none', 'scale-95');
+                      document.getElementById('furnitureTransformSection').classList.add('hidden');
+                      this.refreshBreakerUI(null);
+                      if(dupInput) dupInput.value = this.floors.current;
+                  }
+                  this.updateSelectionChips();
+              }
 
             // ... Rest (setMode, changeFloor, etc) same as before ...
             setMode(mode) {
@@ -1641,18 +1923,19 @@
                 currentObjects.forEach(original => {
                     const furnitureList = [];
                     const fGroup = original.getObjectByName('Furniture');
-                    if(fGroup) fGroup.children.forEach(c => furnitureList.push({type: c.userData.type, pos: c.position.toArray(), rot: c.rotation.toArray()}));
+                  if(fGroup) fGroup.children.forEach(c => furnitureList.push({type: c.userData.type, pos: c.position.toArray(), rot: c.rotation.toArray(), userData: c.userData}));
                     if(original.userData.type === 'Exterieur') return;
                     const baseType = original.userData.type === 'Chambre' ? 'room' : original.userData.type === 'Couloir' ? 'corridor' : (original.userData.type === 'Escalier' ? 'stairs' : 'generic');
                     const clone = this.createBlock(baseType, furnitureList);
-                    if(clone) {
-                        clone.position.x = original.position.x; clone.position.z = original.position.z; clone.rotation.copy(original.rotation);
-                        clone.userData = JSON.parse(JSON.stringify(original.userData));
-                        clone.userData.floor = this.floors.current;
-                        this.ensureLabelDefaults(clone);
-                        if(clone.userData.type === 'Chambre') this.setRoomWallColor(clone, clone.userData.wallColor || '#6366f1');
-                        if(clone.userData.labelText) this.addLabel(clone, clone.userData.labelText);
-                    }
+                      if(clone) {
+                          clone.position.x = original.position.x; clone.position.z = original.position.z; clone.rotation.copy(original.rotation);
+                          clone.userData = JSON.parse(JSON.stringify(original.userData));
+                          clone.userData.floor = this.floors.current;
+                          if(clone.userData.type === 'Chambre') this.ensureRoomId(clone, true);
+                          this.ensureLabelDefaults(clone);
+                          if(clone.userData.type === 'Chambre') this.setRoomWallColor(clone, clone.userData.wallColor || '#6366f1');
+                          if(clone.userData.labelText) this.addLabel(clone, clone.userData.labelText);
+                      }
                 });
                 this.stateManager.snapshot(); this.updateStats();
             }
@@ -1828,85 +2111,89 @@
                     const original = this.selectedObject;
                     const furnitureList = [];
                     const fGroup = original.getObjectByName('Furniture');
-                    if(fGroup) fGroup.children.forEach(c => furnitureList.push({type: c.userData.type, pos: c.position.toArray(), rot: c.rotation.toArray()}));
+                  if(fGroup) fGroup.children.forEach(c => furnitureList.push({type: c.userData.type, pos: c.position.toArray(), rot: c.rotation.toArray(), userData: c.userData}));
                     const baseType = original.userData.type === 'Chambre' ? 'room' : original.userData.type === 'Couloir' ? 'corridor' : (original.userData.type === 'Escalier' ? 'stairs' : 'generic');
                     let clone;
                     if(original.userData.type === 'Exterieur') {
                         clone = this.createExterior(original.userData.element, targetFloor);
                     } else {
-                        clone = this.createBlock(baseType, furnitureList, targetFloor);
-                    }
-                    if(clone) {
-                        const offset = targetFloor === original.userData.floor ? 2 : 0;
-                        clone.position.set(original.position.x + offset, this.getFloorY(targetFloor), original.position.z + offset);
-                        clone.rotation.copy(original.rotation);
-                        clone.userData = JSON.parse(JSON.stringify(original.userData));
-                        clone.userData.floor = targetFloor;
-                        this.ensureLabelDefaults(clone);
-                        if(clone.userData.type === 'Chambre') this.setRoomWallColor(clone, clone.userData.wallColor || '#6366f1');
-                        if(!isNaN(parseInt(clone.userData.labelText))) {
-                            const newNum = this.roomCounter++; clone.userData.labelText = newNum.toString(); clone.userData.name = `Chambre ${newNum}`;
-                            this.addLabel(clone, clone.userData.labelText);
-                        }
-                        this.refreshDoorLabels(clone);
-                    }
-                }
-                this.updateFloorVisibility();
-                this.stateManager.snapshot(); this.updateStats(); this.showToast(`Objet dupliqué vers ${this.formatFloorLabel(targetFloor)}`, 'success');
-            }
+                          clone = this.createBlock(baseType, furnitureList, targetFloor);
+                      }
+                      if(clone) {
+                          const offset = targetFloor === original.userData.floor ? 2 : 0;
+                          clone.position.set(original.position.x + offset, this.getFloorY(targetFloor), original.position.z + offset);
+                          clone.rotation.copy(original.rotation);
+                          clone.userData = JSON.parse(JSON.stringify(original.userData));
+                          clone.userData.floor = targetFloor;
+                          if(clone.userData.type === 'Chambre') this.ensureRoomId(clone, true);
+                          this.ensureLabelDefaults(clone);
+                          if(clone.userData.type === 'Chambre') this.setRoomWallColor(clone, clone.userData.wallColor || '#6366f1');
+                          if(!isNaN(parseInt(clone.userData.labelText))) {
+                              const newNum = this.roomCounter++; clone.userData.labelText = newNum.toString(); clone.userData.name = `Chambre ${newNum}`;
+                              this.addLabel(clone, clone.userData.labelText);
+                          }
+                          this.refreshDoorLabels(clone);
+                      }
+                  }
+                  this.updateFloorVisibility();
+                  this.updateBreakerCables();
+                  this.stateManager.snapshot(); this.updateStats(); this.showToast(`Objet dupliqué vers ${this.formatFloorLabel(targetFloor)}`, 'success');
+              }
 
             deleteSelection() {
                 if(!this.selectedObject) return;
-                if(this.selectedObject.userData.isFurniture) this.selectedObject.parent.remove(this.selectedObject);
-                else this.scene.remove(this.selectedObject);
-                this.selectObject(null); this.stateManager.snapshot(); this.updateStats(); this.showToast('Supprimé', 'info');
-            }
+                  if(this.selectedObject.userData.isFurniture) this.selectedObject.parent.remove(this.selectedObject);
+                  else this.scene.remove(this.selectedObject);
+                  this.selectObject(null); this.updateBreakerCables(); this.stateManager.snapshot(); this.updateStats(); this.showToast('Supprimé', 'info');
+              }
 
             serializeScene() {
                 const objects = [];
                 this.scene.traverse(obj => {
-                    if(obj.userData && obj.userData.type) {
-                        const furniture = [];
-                        const fGroup = obj.getObjectByName('Furniture');
-                        if(fGroup) fGroup.children.forEach(c => furniture.push({ type: c.userData.type, pos: c.position.toArray(), rot: c.rotation.toArray() }));
-                        objects.push({ type: obj.userData.type, position: obj.position.toArray(), rotation: obj.rotation.toArray(), scale: obj.scale.toArray(), userData: obj.userData, furniture: furniture });
-                    }
-                });
-                return { version: 2.6, timestamp: Date.now(), roomCounter: this.roomCounter, floors: this.floors, objects: objects, labelsVisible: this.labelsVisible };
-            }
+                      if(obj.userData && obj.userData.type) {
+                          const furniture = [];
+                          const fGroup = obj.getObjectByName('Furniture');
+                          if(fGroup) fGroup.children.forEach(c => furniture.push({ type: c.userData.type, pos: c.position.toArray(), rot: c.rotation.toArray(), userData: c.userData }));
+                          objects.push({ type: obj.userData.type, position: obj.position.toArray(), rotation: obj.rotation.toArray(), scale: obj.scale.toArray(), userData: obj.userData, furniture: furniture });
+                      }
+                  });
+                  return { version: 2.7, timestamp: Date.now(), roomCounter: this.roomCounter, floors: this.floors, objects: objects, labelsVisible: this.labelsVisible, breakerCablesVisible: this.cablesVisible };
+              }
 
             saveToFile() {
-                const data = JSON.stringify(this.serializeScene(), null, 2);
-                const blob = new Blob([data], {type: 'application/json'});
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a'); a.href = url; a.download = `flexilogis_v2.6_${new Date().toISOString().slice(0,10)}.json`; a.click();
-                this.showToast('Projet sauvegardé', 'success');
-            }
+                  const data = JSON.stringify(this.serializeScene(), null, 2);
+                  const blob = new Blob([data], {type: 'application/json'});
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a'); a.href = url; a.download = `flexilogis_v2.7_${new Date().toISOString().slice(0,10)}.json`; a.click();
+                  this.showToast('Projet sauvegardé', 'success');
+              }
 
             loadScene(state) {
-                this.resetScene(false); this.roomCounter = state.roomCounter; this.floors = state.floors; this.labelsVisible = state.labelsVisible !== undefined ? state.labelsVisible : true;
-                state.objects.forEach(data => {
-                    const savedCurrent = this.floors.current; this.floors.current = data.userData.floor;
-                    let obj;
+                  this.resetScene(false); this.roomCounter = state.roomCounter; this.floors = state.floors; this.labelsVisible = state.labelsVisible !== undefined ? state.labelsVisible : true; this.cablesVisible = state.breakerCablesVisible !== undefined ? state.breakerCablesVisible : true;
+                  state.objects.forEach(data => {
+                      const savedCurrent = this.floors.current; this.floors.current = data.userData.floor;
+                      let obj;
                     if(data.type === 'Chambre') obj = this.createBlock('room', data.furniture);
                     else if(data.type === 'Couloir') obj = this.createBlock('corridor');
                     else if(data.type === 'Zone' || data.type === 'Generic') obj = this.createBlock('generic');
                     else if(data.type === 'Escalier') obj = this.createBlock('stairs');
                     else if(data.userData?.type === 'Exterieur') obj = this.createExterior(data.userData.element || 'pelouse', data.userData.floor || 0);
-                    if(obj) {
-                        obj.position.fromArray(data.position); obj.rotation.fromArray(data.rotation); obj.scale.fromArray(data.scale); obj.userData = data.userData;
-                        obj.position.y = this.getFloorY(obj.userData.floor || 0);
-                        this.ensureLabelDefaults(obj);
-                        if(obj.userData.labelText) this.addLabel(obj, obj.userData.labelText);
-                        if(obj.userData.type === 'Chambre') this.setRoomWallColor(obj, obj.userData.wallColor || '#6366f1');
+                      if(obj) {
+                          obj.position.fromArray(data.position); obj.rotation.fromArray(data.rotation); obj.scale.fromArray(data.scale); obj.userData = data.userData;
+                          obj.position.y = this.getFloorY(obj.userData.floor || 0);
+                          if(obj.userData.type === 'Chambre') this.ensureRoomId(obj);
+                          this.ensureLabelDefaults(obj);
+                          if(obj.userData.labelText) this.addLabel(obj, obj.userData.labelText);
+                          if(obj.userData.type === 'Chambre') this.setRoomWallColor(obj, obj.userData.wallColor || '#6366f1');
                         this.refreshDoorLabels(obj);
                         if(obj.userData.labelColor) this.selectedObject = obj;
                     }
-                    this.floors.current = savedCurrent;
-                });
-                this.updateFloorVisibility(); this.updateUI(); this.updateStats(); this.updateAllLabelVisibility();
-                this.updateSelectionChips();
-            }
+                      this.floors.current = savedCurrent;
+                  });
+                  this.updateFloorVisibility(); this.updateUI(); this.updateStats(); this.updateAllLabelVisibility();
+                  this.updateBreakerCables();
+                  this.updateSelectionChips();
+              }
 
             loadFile(event) {
                 const file = event.target.files[0]; if(!file) return;
@@ -1916,11 +2203,14 @@
             }
 
             resetScene(createDefault = true) {
-                const toRemove = []; this.scene.traverse(obj => { if(obj.userData && obj.userData.type) toRemove.push(obj); });
-                toRemove.forEach(o => this.scene.remove(o));
-                this.roomCounter = 1; this.floors = { current: 0, max: 0 }; this.labelsVisible = true; this.updateUI(); this.updateStats();
-                if(createDefault) { this.createBlock('room'); this.stateManager.history = []; this.stateManager.snapshot(); this.showToast('Reset', 'info'); }
-            }
+                  const toRemove = []; this.scene.traverse(obj => { if(obj.userData && obj.userData.type) toRemove.push(obj); });
+                  toRemove.forEach(o => this.scene.remove(o));
+                  if(this.breakerCableGroup) this.breakerCableGroup.clear();
+                  this.cableMaterials = [];
+                  this.roomCounter = 1; this.floors = { current: 0, max: 0 }; this.labelsVisible = true; this.cablesVisible = true; this.updateUI(); this.updateStats();
+                  this.updateCableToggleButton();
+                  if(createDefault) { this.createBlock('room'); this.stateManager.history = []; this.stateManager.snapshot(); this.showToast('Reset', 'info'); }
+              }
 
             updateUI() {
                 document.getElementById('floorNumberDisplay').innerText = this.floors.current;
@@ -1968,19 +2258,22 @@
 
             animate() {
                 this.orbit.update();
-                if(!this.isGlobalView) {
-                    this.scene.traverse(obj => {
-                        if(obj.name === 'Label') {
-                            const dist = obj.position.distanceTo(this.camera.position);
-                            const scale = Math.max(1.5, dist / 15);
-                            const base = obj.parent?.userData?.labelScale || CONFIG.defaultLabelScale;
-                            obj.scale.set(scale * 2 * base, scale * base, 1);
-                            obj.visible = this.labelsVisible && obj.parent?.userData.labelVisible !== false;
-                        }
-                    });
-                }
-                this.renderer.render(this.scene, this.camera);
-            }
+                  if(!this.isGlobalView) {
+                      this.scene.traverse(obj => {
+                          if(obj.name === 'Label') {
+                              const dist = obj.position.distanceTo(this.camera.position);
+                              const scale = Math.max(1.5, dist / 15);
+                              const base = obj.parent?.userData?.labelScale || CONFIG.defaultLabelScale;
+                              obj.scale.set(scale * 2 * base, scale * base, 1);
+                              obj.visible = this.labelsVisible && obj.parent?.userData.labelVisible !== false;
+                          }
+                      });
+                  }
+                  if(this.cablesVisible && this.cableMaterials.length) {
+                      this.cableMaterials.forEach(mat => { mat.dashOffset -= 0.01; mat.needsUpdate = true; });
+                  }
+                  this.renderer.render(this.scene, this.camera);
+              }
         }
 
         const app = new HotelArchitect();
