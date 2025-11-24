@@ -1030,6 +1030,15 @@
                   return floorIndex * (CONFIG.floorHeight + CONFIG.floorGap);
               }
 
+              getTypeYOffset(type) {
+                  if(!type) return 0;
+                  const normalized = typeof type === 'string' ? type.toLowerCase() : '';
+                  if(normalized === 'couloir' || normalized === 'corridor' || normalized === 'zone' || normalized === 'generic') {
+                      return CONFIG.floorHeight / 2;
+                  }
+                  return 0;
+              }
+
               makeRoomId() {
                   return 'room-' + Math.random().toString(36).slice(2, 7) + Date.now().toString(36);
               }
@@ -1261,7 +1270,6 @@
                     const geo = new THREE.BoxGeometry(10, CONFIG.floorHeight, 2);
                     const mat = new THREE.MeshStandardMaterial({ color: '#14b8a6' });
                     mesh = new THREE.Mesh(geo, mat);
-                    mesh.position.y = CONFIG.floorHeight / 2;
                     mesh.userData = {
                         type: 'Couloir',
                         name: 'Couloir',
@@ -1277,7 +1285,6 @@
                     const geo = new THREE.BoxGeometry(4, CONFIG.floorHeight, 4);
                     const mat = new THREE.MeshStandardMaterial({ color: '#64748b' });
                     mesh = new THREE.Mesh(geo, mat);
-                    mesh.position.y = CONFIG.floorHeight / 2;
                     mesh.userData = {
                         type: 'Zone',
                         name: 'Zone',
@@ -1302,7 +1309,8 @@
                 }
 
                 if (mesh) {
-                    mesh.position.set(randX, yPos, randZ);
+                    const yOffset = this.getTypeYOffset(mesh.userData?.type || type);
+                    mesh.position.set(randX, yPos + yOffset, randZ);
                     mesh.userData.floor = targetFloor;
                     mesh.userData.labelColor = CONFIG.defaultLabelColor;
                     mesh.userData.textColor = CONFIG.defaultTextColor;
@@ -1842,7 +1850,8 @@
                     if(this.control.mode === 'translate') {
                         obj.position.x = Math.round(obj.position.x / CONFIG.gridSize) * CONFIG.gridSize;
                         obj.position.z = Math.round(obj.position.z / CONFIG.gridSize) * CONFIG.gridSize;
-                        obj.position.y = this.getFloorY(obj.userData.floor || 0);
+                        const yBase = this.getFloorY(obj.userData.floor || 0) + this.getTypeYOffset(obj.userData.type);
+                        obj.position.y = yBase;
                       } else if (this.control.mode === 'rotate') {
                           obj.rotation.x = 0; obj.rotation.z = 0;
                           obj.rotation.y = Math.round(obj.rotation.y / (Math.PI/2)) * (Math.PI/2);
@@ -2258,7 +2267,8 @@
                     }
                     if(clone) {
                         const offset = targetFloor === original.userData.floor ? 2 : 0;
-                        clone.position.set(original.position.x + offset, this.getFloorY(targetFloor), original.position.z + offset);
+                        const yBase = this.getFloorY(targetFloor) + this.getTypeYOffset(clone.userData.type);
+                        clone.position.set(original.position.x + offset, yBase, original.position.z + offset);
                         clone.rotation.copy(original.rotation);
                         clone.scale.copy(original.scale);
                         clone.userData = JSON.parse(JSON.stringify(original.userData));
@@ -2320,7 +2330,8 @@
                     else if(data.userData?.type === 'Exterieur') obj = this.createExterior(data.userData.element || 'pelouse', data.userData.floor || 0);
                       if(obj) {
                           obj.position.fromArray(data.position); obj.rotation.fromArray(data.rotation); obj.scale.fromArray(data.scale); obj.userData = data.userData;
-                          obj.position.y = this.getFloorY(obj.userData.floor || 0);
+                          const yBase = this.getFloorY(obj.userData.floor || 0) + this.getTypeYOffset(obj.userData.type);
+                          obj.position.y = yBase;
                           if(obj.userData.type === 'Chambre') this.ensureRoomId(obj);
                           this.ensureLabelDefaults(obj);
                           if(obj.userData.labelText) this.addLabel(obj, obj.userData.labelText);
