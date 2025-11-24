@@ -1213,7 +1213,8 @@
                           furnitureList.forEach(item => {
                               const fMesh = FurnitureFactory[item.type]();
                               fMesh.position.fromArray(item.pos);
-                              fMesh.rotation.fromArray(item.rot);
+                              fMesh.rotation.set(item.rot?.[0] || 0, item.rot?.[1] || 0, item.rot?.[2] || 0);
+                              if(item.scale) fMesh.scale.fromArray(item.scale);
                               if(item.userData) fMesh.userData = {...fMesh.userData, ...item.userData};
                               furnitureGroup.add(fMesh);
                           });
@@ -1930,7 +1931,15 @@
                 currentObjects.forEach(original => {
                     const furnitureList = [];
                     const fGroup = original.getObjectByName('Furniture');
-                  if(fGroup) fGroup.children.forEach(c => furnitureList.push({type: c.userData.type, pos: c.position.toArray(), rot: c.rotation.toArray(), userData: c.userData}));
+                    if(fGroup) {
+                        fGroup.children.forEach(c => furnitureList.push({
+                            type: c.userData.type,
+                            pos: c.position.toArray(),
+                            rot: [c.rotation.x, c.rotation.y, c.rotation.z],
+                            scale: c.scale.toArray(),
+                            userData: JSON.parse(JSON.stringify(c.userData))
+                        }));
+                    }
                     if(original.userData.type === 'Exterieur') return;
                     const baseType = original.userData.type === 'Chambre' ? 'room' : original.userData.type === 'Couloir' ? 'corridor' : (original.userData.type === 'Escalier' ? 'stairs' : 'generic');
                     const clone = this.createBlock(baseType, furnitureList);
@@ -2148,7 +2157,15 @@
                     const original = this.selectedObject;
                     const furnitureList = [];
                     const fGroup = original.getObjectByName('Furniture');
-                  if(fGroup) fGroup.children.forEach(c => furnitureList.push({type: c.userData.type, pos: c.position.toArray(), rot: c.rotation.toArray(), userData: c.userData}));
+                    if(fGroup) {
+                        fGroup.children.forEach(c => furnitureList.push({
+                            type: c.userData.type,
+                            pos: c.position.toArray(),
+                            rot: [c.rotation.x, c.rotation.y, c.rotation.z],
+                            scale: c.scale.toArray(),
+                            userData: JSON.parse(JSON.stringify(c.userData))
+                        }));
+                    }
                     const baseType = original.userData.type === 'Chambre' ? 'room' : original.userData.type === 'Couloir' ? 'corridor' : (original.userData.type === 'Escalier' ? 'stairs' : 'generic');
                     let clone;
                     if(original.userData.type === 'Exterieur') {
