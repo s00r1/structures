@@ -2171,18 +2171,19 @@
                     if(original.userData.type === 'Exterieur') {
                         clone = this.createExterior(original.userData.element, targetFloor);
                     } else {
-                          clone = this.createBlock(baseType, furnitureList, targetFloor);
-                      }
-                      if(clone) {
-                          const offset = targetFloor === original.userData.floor ? 2 : 0;
-                          clone.position.set(original.position.x + offset, this.getFloorY(targetFloor), original.position.z + offset);
-                          clone.rotation.copy(original.rotation);
-                          clone.userData = JSON.parse(JSON.stringify(original.userData));
-                          clone.userData.floor = targetFloor;
-                          if(clone.userData.type === 'Chambre') this.ensureRoomId(clone, true);
-                          this.ensureLabelDefaults(clone);
-                          if(clone.userData.type === 'Chambre') this.setRoomWallColor(clone, clone.userData.wallColor || '#6366f1');
-                          if(!isNaN(parseInt(clone.userData.labelText))) {
+                        clone = this.createBlock(baseType, furnitureList, targetFloor);
+                    }
+                    if(clone) {
+                        const offset = targetFloor === original.userData.floor ? 2 : 0;
+                        clone.position.set(original.position.x + offset, this.getFloorY(targetFloor), original.position.z + offset);
+                        clone.rotation.copy(original.rotation);
+                        clone.scale.copy(original.scale);
+                        clone.userData = JSON.parse(JSON.stringify(original.userData));
+                        clone.userData.floor = targetFloor;
+                        if(clone.userData.type === 'Chambre') this.ensureRoomId(clone, true);
+                        this.ensureLabelDefaults(clone);
+                        if(clone.userData.type === 'Chambre') this.setRoomWallColor(clone, clone.userData.wallColor || '#6366f1');
+                        if(!isNaN(parseInt(clone.userData.labelText))) {
                               const newNum = this.roomCounter++; clone.userData.labelText = newNum.toString(); clone.userData.name = `Chambre ${newNum}`;
                               this.addLabel(clone, clone.userData.labelText);
                           }
