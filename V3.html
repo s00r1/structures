@@ -262,6 +262,54 @@
                      <button onclick="app.resizeSelection('L')" class="flex-1 py-1 bg-white border border-gray-200 rounded text-xs font-bold text-gray-600 hover:bg-gray-50">L</button>
                  </div>
             </div>
+
+            <!-- Label Controls -->
+            <div id="labelSection" class="mb-4 space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="block text-[10px] font-bold text-gray-500">ÉTIQUETTE</span>
+                    <div class="flex gap-1">
+                        <button id="toggleLabelBtn" class="px-2 py-1 bg-white border border-gray-200 rounded text-[10px] font-bold text-gray-600 hover:bg-gray-50">Afficher</button>
+                        <button id="toggleAllLabelsBtn" class="px-2 py-1 bg-white border border-gray-200 rounded text-[10px] font-bold text-gray-600 hover:bg-gray-50">Tout</button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 text-[10px] text-gray-600">
+                    <label class="flex flex-col bg-white border border-gray-200 rounded p-2 gap-1">
+                        Taille
+                        <input id="labelSizeInput" type="range" min="0.5" max="3" step="0.1" class="w-full accent-blue-500">
+                    </label>
+                    <label class="flex flex-col bg-white border border-gray-200 rounded p-2 gap-1">
+                        Couleur texte
+                        <input id="labelTextColorInput" type="color" class="w-full h-8 border border-gray-200 rounded" value="#ffffff">
+                    </label>
+                </div>
+                <div class="grid grid-cols-3 gap-2 text-[10px] text-gray-600">
+                    <label class="flex flex-col bg-white border border-gray-200 rounded p-2 gap-1">
+                        X
+                        <input id="labelPosX" type="number" step="0.1" class="w-full text-xs border border-gray-200 rounded px-1 py-0.5" />
+                    </label>
+                    <label class="flex flex-col bg-white border border-gray-200 rounded p-2 gap-1">
+                        Y
+                        <input id="labelPosY" type="number" step="0.1" class="w-full text-xs border border-gray-200 rounded px-1 py-0.5" />
+                    </label>
+                    <label class="flex flex-col bg-white border border-gray-200 rounded p-2 gap-1">
+                        Z
+                        <input id="labelPosZ" type="number" step="0.1" class="w-full text-xs border border-gray-200 rounded px-1 py-0.5" />
+                    </label>
+                </div>
+            </div>
+
+            <!-- Furniture Manager -->
+            <div id="furnitureSection" class="mb-3 space-y-2">
+                <label class="block text-[10px] font-bold text-gray-500">OBJETS DE LA CHAMBRE</label>
+                <div class="flex gap-2">
+                    <select id="furnitureSelector" class="flex-1 bg-white border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                        <!-- options via JS -->
+                    </select>
+                    <button id="addFurnitureBtn" class="px-2 bg-blue-600 text-white rounded text-xs font-bold hover:bg-blue-700">Ajouter</button>
+                    <button id="removeFurnitureBtn" class="px-2 bg-red-50 text-red-600 border border-red-200 rounded text-xs font-bold hover:bg-red-100">Suppr.</button>
+                </div>
+            </div>
             
             <button id="duplicateBtn" class="w-full mt-2 py-2 bg-yellow-50 text-yellow-700 text-xs font-bold rounded border border-yellow-200 hover:bg-yellow-100 flex items-center justify-center gap-2">
                 <i data-lucide="copy" size="14"></i> Dupliquer Objet
@@ -300,10 +348,10 @@
 
         // --- CONFIGURATION ---
         const CONFIG = {
-            gridSize: 0.5, 
+            gridSize: 0.5,
             floorHeight: 3.5,
             colors: [
-                '#6366f1', '#3b82f6', '#0ea5e9', '#14b8a6', 
+                '#6366f1', '#3b82f6', '#0ea5e9', '#14b8a6',
                 '#22c55e', '#84cc16', '#eab308', '#f97316', 
                 '#ef4444', '#a855f7', '#d946ef', '#ec4899', 
                 '#64748b', '#94a3b8', '#cbd5e1', '#f1f5f9', 
@@ -311,6 +359,8 @@
             ],
             defaultLabelColor: '#1e293b',
             defaultTextColor: '#ffffff',
+            defaultLabelScale: 1.2,
+            defaultLabelOffset: { x: 0, y: 4, z: 0 },
             roomWidth: 4,
             roomDepth: 6
         };
@@ -369,11 +419,100 @@
                 group.userData = { isFurniture: true, type: 'chair', name: 'Chaise', dims: {x:0.4, z:0.4}, defaultY: 0 };
                 return group;
             },
+            table: () => {
+                const group = new THREE.Group();
+                const top = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.1, 0.8), new THREE.MeshStandardMaterial({color: '#cbd5e1'}));
+                top.position.y = 0.8;
+                const legGeo = new THREE.CylinderGeometry(0.05, 0.05, 0.8);
+                const legMat = new THREE.MeshStandardMaterial({color: '#475569'});
+                const positions = [
+                    [-0.6, 0.4], [0.6, 0.4], [-0.6, -0.4], [0.6, -0.4]
+                ];
+                positions.forEach(p => {
+                    const leg = new THREE.Mesh(legGeo, legMat);
+                    leg.position.set(p[0], 0.4, p[1]);
+                    group.add(leg);
+                });
+                group.add(top);
+                group.userData = { isFurniture: true, type: 'table', name: 'Table', dims: {x:1.4, z:0.8}, defaultY: 0 };
+                return group;
+            },
             tv: () => {
                 const mesh = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.8, 1.2), new THREE.MeshStandardMaterial({color: '#000000', metalness: 0.8}));
                 mesh.position.y = 1.5;
                 mesh.userData = { isFurniture: true, type: 'tv', name: 'TV', dims: {x:0.1, z:1.2}, defaultY: 1.5 };
                 return mesh;
+            },
+            toilet: () => {
+                const group = new THREE.Group();
+                const base = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.4, 0.5, 20), new THREE.MeshStandardMaterial({color: '#e2e8f0'}));
+                base.position.y = 0.25;
+                const tank = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.5, 0.2), new THREE.MeshStandardMaterial({color: '#e2e8f0'}));
+                tank.position.set(0, 0.75, -0.15);
+                const seat = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 0.1, 20), new THREE.MeshStandardMaterial({color: '#f8fafc'}));
+                seat.position.y = 0.5;
+                group.add(base, tank, seat);
+                group.userData = { isFurniture: true, type: 'toilet', name: 'WC', dims: {x:0.8, z:0.8}, defaultY: 0 };
+                return group;
+            },
+            sink: () => {
+                const group = new THREE.Group();
+                const column = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.25, 0.7, 16), new THREE.MeshStandardMaterial({color: '#94a3b8'}));
+                column.position.y = 0.35;
+                const bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.4, 0.25, 20), new THREE.MeshStandardMaterial({color: '#e5e7eb'}));
+                bowl.position.y = 0.75;
+                const tap = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.15, 0.3), new THREE.MeshStandardMaterial({color: '#1e293b'}));
+                tap.position.set(0, 0.95, -0.1);
+                group.add(column, bowl, tap);
+                group.userData = { isFurniture: true, type: 'sink', name: 'Évier', dims: {x:0.9, z:0.9}, defaultY: 0 };
+                return group;
+            },
+            bathtub: () => {
+                const group = new THREE.Group();
+                const tub = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.6, 0.8), new THREE.MeshStandardMaterial({color: '#e2e8f0'}));
+                tub.position.y = 0.3;
+                const water = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.3, 0.6), new THREE.MeshStandardMaterial({color: '#bfdbfe', transparent: true, opacity: 0.6}));
+                water.position.y = 0.45;
+                group.add(tub, water);
+                group.userData = { isFurniture: true, type: 'bathtub', name: 'Baignoire', dims: {x:1.6, z:0.8}, defaultY: 0 };
+                return group;
+            },
+            crib: () => {
+                const group = new THREE.Group();
+                const base = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.1, 1.2), new THREE.MeshStandardMaterial({color: '#fef08a'}));
+                base.position.y = 0.2;
+                const sideMat = new THREE.MeshStandardMaterial({color: '#f59e0b'});
+                const railGeo = new THREE.BoxGeometry(0.05, 0.6, 1.2);
+                const rail1 = new THREE.Mesh(railGeo, sideMat); rail1.position.set(-0.35, 0.55, 0);
+                const rail2 = new THREE.Mesh(railGeo, sideMat); rail2.position.set(0.35, 0.55, 0);
+                const head = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.6, 0.05), sideMat); head.position.set(0, 0.55, 0.6);
+                const foot = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.6, 0.05), sideMat); foot.position.set(0, 0.55, -0.6);
+                group.add(base, rail1, rail2, head, foot);
+                group.userData = { isFurniture: true, type: 'crib', name: 'Lit bébé', dims: {x:0.7, z:1.2}, defaultY: 0 };
+                return group;
+            },
+            singleBed: () => {
+                const group = FurnitureFactory.bed();
+                group.scale.set(0.7, 1, 0.75);
+                group.userData = { isFurniture: true, type: 'singleBed', name: 'Lit simple', dims: {x:1.1, z:1.6}, defaultY: 0 };
+                return group;
+            },
+            doubleBed: () => {
+                const group = FurnitureFactory.bed();
+                group.userData = { isFurniture: true, type: 'doubleBed', name: 'Lit double', dims: {x:1.6, z:2}, defaultY: 0 };
+                return group;
+            },
+            bunkBed: () => {
+                const group = new THREE.Group();
+                const lower = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.5, 2), new THREE.MeshStandardMaterial({color: '#e2e8f0'}));
+                lower.position.y = 0.25;
+                const upper = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.4, 1.6), new THREE.MeshStandardMaterial({color: '#cbd5e1'}));
+                upper.position.set(0, 1.5, 0);
+                const ladder = new THREE.Mesh(new THREE.BoxGeometry(0.1, 1.6, 0.4), new THREE.MeshStandardMaterial({color: '#b45309'}));
+                ladder.position.set(0.9, 0.8, 0.9);
+                group.add(lower, upper, ladder);
+                group.userData = { isFurniture: true, type: 'bunkBed', name: 'Lit superposé', dims: {x:1.6, z:2}, defaultY: 0 };
+                return group;
             },
             door: () => {
                 const group = new THREE.Group();
@@ -451,7 +590,23 @@
                 this.scene = null; this.camera = null; this.renderer = null;
                 this.orbit = null; this.control = null; this.raycaster = new THREE.Raycaster(); this.pointer = new THREE.Vector2();
                 this.floors = { current: 0, max: 0 }; this.roomCounter = 1;
-                this.selectedObject = null; this.isGlobalView = false; this.colorTarget = 'block'; 
+                this.selectedObject = null; this.isGlobalView = false; this.colorTarget = 'block'; this.labelsVisible = true;
+                this.furnitureChoices = [
+                    { value: 'crib', label: 'Lit bébé' },
+                    { value: 'singleBed', label: 'Lit simple (1 personne)' },
+                    { value: 'doubleBed', label: 'Lit double (2 personnes)' },
+                    { value: 'bunkBed', label: 'Lit superposé (mixte)' },
+                    { value: 'desk', label: 'Bureau' },
+                    { value: 'chair', label: 'Chaise' },
+                    { value: 'table', label: 'Table' },
+                    { value: 'shower', label: 'Douche' },
+                    { value: 'bathtub', label: 'Baignoire' },
+                    { value: 'wardrobe', label: 'Armoire' },
+                    { value: 'window', label: 'Fenêtre' },
+                    { value: 'door', label: 'Porte' },
+                    { value: 'toilet', label: 'WC' },
+                    { value: 'sink', label: 'Évier' }
+                ];
                 this.stateManager = new StateManager(this); this.gridHelper = null;
                 this.init();
             }
@@ -525,6 +680,16 @@
                 document.getElementById('resetBtn').onclick = () => this.resetScene();
                 document.getElementById('undoBtn').onclick = () => this.stateManager.undo();
                 document.getElementById('redoBtn').onclick = () => this.stateManager.redo();
+                document.getElementById('labelSizeInput').oninput = (e) => this.updateLabelScale(parseFloat(e.target.value));
+                document.getElementById('labelTextColorInput').oninput = (e) => this.updateLabelTextColor(e.target.value);
+                ['X','Y','Z'].forEach(axis => {
+                    document.getElementById('labelPos'+axis).onchange = (e) => this.updateLabelOffset(axis.toLowerCase(), parseFloat(e.target.value));
+                });
+                document.getElementById('toggleLabelBtn').onclick = () => this.toggleSelectedLabel();
+                document.getElementById('toggleAllLabelsBtn').onclick = () => this.toggleAllLabels();
+                this.populateFurnitureSelector();
+                document.getElementById('addFurnitureBtn').onclick = () => this.addFurnitureFromMenu();
+                document.getElementById('removeFurnitureBtn').onclick = () => this.removeFurnitureFromMenu();
             }
             
             initColorPalette() {
@@ -535,6 +700,15 @@
                     btn.style.backgroundColor = color;
                     btn.onclick = () => this.applyColor(color);
                     container.appendChild(btn);
+                });
+            }
+
+            populateFurnitureSelector() {
+                const select = document.getElementById('furnitureSelector');
+                select.innerHTML = '';
+                this.furnitureChoices.forEach(opt => {
+                    const o = document.createElement('option');
+                    o.value = opt.value; o.textContent = opt.label; select.appendChild(o);
                 });
             }
 
@@ -601,21 +775,48 @@
                     hitBox.position.y = h/2; hitBox.name = "StructureHitbox"; 
                     mesh.add(hitBox);
 
-                    mesh.userData = { type: 'Chambre', name: `Chambre ${this.roomCounter}`, labelText: this.roomCounter.toString() };
+                    mesh.userData = {
+                        type: 'Chambre',
+                        name: `Chambre ${this.roomCounter}`,
+                        labelText: this.roomCounter.toString(),
+                        labelColor: CONFIG.defaultLabelColor,
+                        textColor: CONFIG.defaultTextColor,
+                        labelScale: CONFIG.defaultLabelScale,
+                        labelOffset: {...CONFIG.defaultLabelOffset},
+                        labelVisible: true
+                    };
                     this.roomCounter++;
                 }
                 else if (type === 'corridor') {
                     const geo = new THREE.BoxGeometry(10, CONFIG.floorHeight, 2);
                     const mat = new THREE.MeshStandardMaterial({ color: '#14b8a6' });
                     mesh = new THREE.Mesh(geo, mat);
-                    mesh.position.y = CONFIG.floorHeight / 2; 
-                    mesh.userData = { type: 'Couloir', name: 'Couloir', labelText: '' };
+                    mesh.position.y = CONFIG.floorHeight / 2;
+                    mesh.userData = {
+                        type: 'Couloir',
+                        name: 'Couloir',
+                        labelText: '',
+                        labelColor: CONFIG.defaultLabelColor,
+                        textColor: CONFIG.defaultTextColor,
+                        labelScale: CONFIG.defaultLabelScale,
+                        labelOffset: {...CONFIG.defaultLabelOffset},
+                        labelVisible: true
+                    };
                 } else if (type === 'generic') {
                     const geo = new THREE.BoxGeometry(4, CONFIG.floorHeight, 4);
                     const mat = new THREE.MeshStandardMaterial({ color: '#64748b' });
                     mesh = new THREE.Mesh(geo, mat);
                     mesh.position.y = CONFIG.floorHeight / 2;
-                    mesh.userData = { type: 'Zone', name: 'Zone', labelText: 'Zone' };
+                    mesh.userData = {
+                        type: 'Zone',
+                        name: 'Zone',
+                        labelText: 'Zone',
+                        labelColor: CONFIG.defaultLabelColor,
+                        textColor: CONFIG.defaultTextColor,
+                        labelScale: CONFIG.defaultLabelScale,
+                        labelOffset: {...CONFIG.defaultLabelOffset},
+                        labelVisible: true
+                    };
                 } else if (type === 'stairs') {
                     mesh = new THREE.Group();
                     const steps = 8; const stepH = CONFIG.floorHeight/steps; const stepD = 4/steps;
@@ -645,6 +846,7 @@
             }
 
             addLabel(parent, text) {
+                this.ensureLabelDefaults(parent);
                 const old = parent.getObjectByName('Label');
                 if(old) parent.remove(old);
                 if(!text) return;
@@ -657,8 +859,124 @@
                 ctx.font = 'bold 120px Inter, Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
                 ctx.fillText(text, 256, 128);
                 const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(canvas), depthTest: false }));
-                sprite.name = 'Label'; sprite.scale.set(2, 1, 1); sprite.position.set(0, CONFIG.floorHeight + 0.5, 0);
+                sprite.name = 'Label';
+                const scale = parent.userData.labelScale || CONFIG.defaultLabelScale;
+                sprite.scale.set(2 * scale, 1 * scale, 1);
+                const offset = parent.userData.labelOffset || CONFIG.defaultLabelOffset;
+                sprite.position.set(offset.x, offset.y, offset.z);
+                sprite.visible = this.labelsVisible && parent.userData.labelVisible !== false;
+                sprite.userData = { isLabel: true };
                 parent.add(sprite);
+            }
+
+            ensureLabelDefaults(obj) {
+                if(!obj.userData.labelColor) obj.userData.labelColor = CONFIG.defaultLabelColor;
+                if(!obj.userData.textColor) obj.userData.textColor = CONFIG.defaultTextColor;
+                if(!obj.userData.labelScale) obj.userData.labelScale = CONFIG.defaultLabelScale;
+                if(!obj.userData.labelOffset) obj.userData.labelOffset = {...CONFIG.defaultLabelOffset};
+                if(obj.userData.labelVisible === undefined) obj.userData.labelVisible = true;
+            }
+
+            refreshLabelUI(obj) {
+                if(!obj || obj.userData.isFurniture) return;
+                this.ensureLabelDefaults(obj);
+                document.getElementById('labelSizeInput').value = obj.userData.labelScale;
+                document.getElementById('labelTextColorInput').value = obj.userData.textColor;
+                document.getElementById('labelPosX').value = obj.userData.labelOffset.x;
+                document.getElementById('labelPosY').value = obj.userData.labelOffset.y;
+                document.getElementById('labelPosZ').value = obj.userData.labelOffset.z;
+                document.getElementById('toggleLabelBtn').innerText = obj.userData.labelVisible === false ? 'Afficher' : 'Masquer';
+                document.getElementById('toggleAllLabelsBtn').innerText = this.labelsVisible ? 'Masquer tout' : 'Afficher tout';
+            }
+
+            updateLabelScale(val) {
+                if(!this.selectedObject || this.selectedObject.userData.isFurniture) return;
+                this.selectedObject.userData.labelScale = val;
+                this.addLabel(this.selectedObject, this.selectedObject.userData.labelText);
+                this.stateManager.snapshot();
+            }
+
+            updateLabelTextColor(val) {
+                if(!this.selectedObject || this.selectedObject.userData.isFurniture) return;
+                this.selectedObject.userData.textColor = val;
+                this.addLabel(this.selectedObject, this.selectedObject.userData.labelText);
+                this.stateManager.snapshot();
+            }
+
+            updateLabelOffset(axis, val) {
+                if(!this.selectedObject || this.selectedObject.userData.isFurniture) return;
+                if(!this.selectedObject.userData.labelOffset) this.selectedObject.userData.labelOffset = {...CONFIG.defaultLabelOffset};
+                this.selectedObject.userData.labelOffset[axis] = val;
+                this.addLabel(this.selectedObject, this.selectedObject.userData.labelText);
+                this.stateManager.snapshot();
+            }
+
+            toggleSelectedLabel() {
+                if(!this.selectedObject || this.selectedObject.userData.isFurniture) return;
+                this.selectedObject.userData.labelVisible = !(this.selectedObject.userData.labelVisible !== false);
+                this.updateLabelVisibility(this.selectedObject);
+                this.refreshLabelUI(this.selectedObject);
+                this.stateManager.snapshot();
+            }
+
+            toggleAllLabels() {
+                this.labelsVisible = !this.labelsVisible;
+                this.updateAllLabelVisibility();
+                if(this.selectedObject && !this.selectedObject.userData.isFurniture) this.refreshLabelUI(this.selectedObject);
+                this.stateManager.snapshot();
+            }
+
+            updateLabelVisibility(obj) {
+                const label = obj.getObjectByName('Label');
+                if(label) label.visible = this.labelsVisible && obj.userData.labelVisible !== false;
+            }
+
+            updateAllLabelVisibility() {
+                this.scene.traverse(o => {
+                    if(o.userData && o.userData.type && !o.userData.isFurniture) {
+                        this.updateLabelVisibility(o);
+                    }
+                });
+            }
+
+            getTargetRoom() {
+                if(!this.selectedObject) return null;
+                return this.selectedObject.userData.isFurniture ? this.selectedObject.parent : this.selectedObject;
+            }
+
+            addFurnitureFromMenu() {
+                const target = this.getTargetRoom();
+                if(!target || !target.getObjectByName || target.userData.type !== 'Chambre') { this.showToast('Sélectionnez une chambre', 'error'); return; }
+                const type = document.getElementById('furnitureSelector').value;
+                const factory = FurnitureFactory[type];
+                if(!factory) { this.showToast('Objet inconnu', 'error'); return; }
+                let container = target.getObjectByName('Furniture');
+                if(!container) { container = new THREE.Group(); container.name = 'Furniture'; target.add(container); }
+                const item = factory();
+                item.position.set(0, item.userData.defaultY || 0, 0);
+                container.add(item);
+                this.snapObject(item);
+                this.selectObject(item);
+                this.stateManager.snapshot();
+                this.showToast(`${item.userData.name} ajouté`, 'success');
+            }
+
+            removeFurnitureFromMenu() {
+                const target = this.getTargetRoom();
+                if(!target || target.userData.type !== 'Chambre') { this.showToast('Sélectionnez une chambre', 'error'); return; }
+                const type = document.getElementById('furnitureSelector').value;
+                const group = target.getObjectByName('Furniture');
+                if(!group) { this.showToast('Aucun mobilier', 'error'); return; }
+                for(let i = group.children.length - 1; i >=0; i--) {
+                    if(group.children[i].userData.type === type) {
+                        group.remove(group.children[i]);
+                        this.selectObject(target);
+                        this.stateManager.snapshot();
+                        this.showToast('Objet retiré', 'info');
+                        return;
+                    }
+                }
+                this.showToast('Aucun objet de ce type', 'error');
             }
 
             // --- SNAP & CONTRAINTES ---
@@ -703,14 +1021,11 @@
                         if(this.control.mode === 'translate') {
                             obj.position.x = Math.round(obj.position.x / 0.1) * 0.1;
                             obj.position.z = Math.round(obj.position.z / 0.1) * 0.1;
-                        } else if (this.control.mode === 'rotate') {
-                            obj.rotation.x = 0; obj.rotation.z = 0;
-                            obj.rotation.y = Math.round(obj.rotation.y / (Math.PI/4)) * (Math.PI/4);
                         }
 
                         // CONFINEMENT (Reste dans la pièce)
                         const parent = obj.parent;
-                        const roomW = CONFIG.roomWidth * parent.scale.x; 
+                        const roomW = CONFIG.roomWidth * parent.scale.x;
                         const roomD = CONFIG.roomDepth * parent.scale.z; 
                         const padding = 0.2; 
                         const objW = (obj.userData.dims?.x || 0.5) / 2; const objD = (obj.userData.dims?.z || 0.5) / 2;
@@ -798,17 +1113,22 @@
                     panel.classList.remove('opacity-50', 'pointer-events-none', 'scale-95');
                     panel.classList.add('opacity-100', 'scale-100');
                     document.getElementById('propName').value = obj.userData.name || '';
-                    
+
                     if(obj.userData.isFurniture) {
                         document.getElementById('propTitle').innerText = "MOBILIER";
                         document.getElementById('colorSection').classList.add('hidden');
                         document.getElementById('sizeSection').classList.add('hidden');
-                        this.control.showY = false; 
+                        document.getElementById('labelSection').classList.add('hidden');
+                        document.getElementById('furnitureSection').classList.add('hidden');
+                        this.control.showY = false;
                     } else {
                         document.getElementById('propTitle').innerText = "PROPRIÉTÉS";
                         document.getElementById('colorSection').classList.remove('hidden');
                         document.getElementById('sizeSection').classList.remove('hidden');
-                        this.control.showY = false; 
+                        document.getElementById('labelSection').classList.remove('hidden');
+                        document.getElementById('furnitureSection').classList.remove('hidden');
+                        this.refreshLabelUI(obj);
+                        this.control.showY = false;
                     }
                 } else {
                     this.control.detach();
@@ -875,11 +1195,11 @@
             setOpacity(obj, val) {
                 obj.traverse(child => {
                     if(child.isMesh) {
-                        if(child.material.transparent && child.material.opacity < 0.8 && val === 1) return; 
+                        if(child.material.transparent && child.material.opacity < 0.8 && val === 1) return;
                         if(Array.isArray(child.material)) child.material.forEach(m => { m.transparent = val < 1; m.opacity = val; });
                         else { child.material.transparent = val < 1; child.material.opacity = val; }
                     }
-                    if(child.name === 'Label') child.visible = val > 0.5;
+                    if(child.name === 'Label') child.visible = val > 0.5 && this.labelsVisible && child.parent?.userData.labelVisible !== false;
                 });
             }
 
@@ -897,7 +1217,8 @@
             applyColor(hex) {
                 if(!this.selectedObject) return;
                 const obj = this.selectedObject;
-                if(obj.userData.isFurniture) return; 
+                if(obj.userData.isFurniture) return;
+                this.ensureLabelDefaults(obj);
                 if(this.colorTarget === 'block') {
                     const shell = obj.getObjectByName('RoomShell');
                     if(shell) {
@@ -944,6 +1265,7 @@
                     if(clone) {
                         clone.position.copy(original.position); clone.position.x += 2; clone.position.z += 2; clone.rotation.copy(original.rotation);
                         clone.userData = JSON.parse(JSON.stringify(original.userData));
+                        this.ensureLabelDefaults(clone);
                          if(!isNaN(parseInt(clone.userData.labelText))) {
                             const newNum = this.roomCounter++; clone.userData.labelText = newNum.toString(); clone.userData.name = `Chambre ${newNum}`;
                             this.addLabel(clone, clone.userData.labelText);
@@ -970,7 +1292,7 @@
                         objects.push({ type: obj.userData.type, position: obj.position.toArray(), rotation: obj.rotation.toArray(), scale: obj.scale.toArray(), userData: obj.userData, furniture: furniture });
                     }
                 });
-                return { version: 2.5, timestamp: Date.now(), roomCounter: this.roomCounter, floors: this.floors, objects: objects };
+                return { version: 2.5, timestamp: Date.now(), roomCounter: this.roomCounter, floors: this.floors, objects: objects, labelsVisible: this.labelsVisible };
             }
 
             saveToFile() {
@@ -982,7 +1304,7 @@
             }
 
             loadScene(state) {
-                this.resetScene(false); this.roomCounter = state.roomCounter; this.floors = state.floors;
+                this.resetScene(false); this.roomCounter = state.roomCounter; this.floors = state.floors; this.labelsVisible = state.labelsVisible !== undefined ? state.labelsVisible : true;
                 state.objects.forEach(data => {
                     const savedCurrent = this.floors.current; this.floors.current = data.userData.floor;
                     let obj;
@@ -992,12 +1314,13 @@
                     else if(data.type === 'Escalier') obj = this.createBlock('stairs');
                     if(obj) {
                         obj.position.fromArray(data.position); obj.rotation.fromArray(data.rotation); obj.scale.fromArray(data.scale); obj.userData = data.userData;
+                        this.ensureLabelDefaults(obj);
                         if(obj.userData.labelText) this.addLabel(obj, obj.userData.labelText);
-                        if(obj.userData.labelColor) this.selectedObject = obj; 
+                        if(obj.userData.labelColor) this.selectedObject = obj;
                     }
                     this.floors.current = savedCurrent;
                 });
-                this.updateFloorVisibility(); this.updateUI(); this.updateStats();
+                this.updateFloorVisibility(); this.updateUI(); this.updateStats(); this.updateAllLabelVisibility();
             }
 
             loadFile(event) {
@@ -1010,7 +1333,7 @@
             resetScene(createDefault = true) {
                 const toRemove = []; this.scene.traverse(obj => { if(obj.userData && obj.userData.type) toRemove.push(obj); });
                 toRemove.forEach(o => this.scene.remove(o));
-                this.roomCounter = 1; this.floors = { current: 0, max: 0 }; this.updateUI(); this.updateStats();
+                this.roomCounter = 1; this.floors = { current: 0, max: 0 }; this.labelsVisible = true; this.updateUI(); this.updateStats();
                 if(createDefault) { this.createBlock('room'); this.stateManager.history = []; this.stateManager.snapshot(); this.showToast('Reset', 'info'); }
             }
 
@@ -1058,7 +1381,9 @@
                         if(obj.name === 'Label') {
                             const dist = obj.position.distanceTo(this.camera.position);
                             const scale = Math.max(1.5, dist / 15);
-                            obj.scale.set(scale * 2, scale, 1);
+                            const base = obj.parent?.userData?.labelScale || CONFIG.defaultLabelScale;
+                            obj.scale.set(scale * 2 * base, scale * base, 1);
+                            obj.visible = this.labelsVisible && obj.parent?.userData.labelVisible !== false;
                         }
                     });
                 }
