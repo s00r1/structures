@@ -386,6 +386,7 @@
                 <div class="flex items-center justify-between">
                     <span class="block text-[10px] font-bold text-gray-500">ÉTIQUETTE</span>
                     <div class="flex gap-1">
+                        <button id="toggleDoorLabelBtn" class="px-2 py-1 bg-white border border-gray-200 rounded text-[10px] font-bold text-gray-600 hover:bg-gray-50">Porte</button>
                         <button id="toggleLabelBtn" class="px-2 py-1 bg-white border border-gray-200 rounded text-[10px] font-bold text-gray-600 hover:bg-gray-50">Afficher</button>
                         <button id="toggleAllLabelsBtn" class="px-2 py-1 bg-white border border-gray-200 rounded text-[10px] font-bold text-gray-600 hover:bg-gray-50">Tout</button>
                     </div>
@@ -824,6 +825,7 @@
                 ['X','Y','Z'].forEach(axis => {
                     document.getElementById('labelPos'+axis).onchange = (e) => this.updateLabelOffset(axis.toLowerCase(), parseFloat(e.target.value));
                 });
+                document.getElementById('toggleDoorLabelBtn').onclick = () => this.toggleDoorLabel();
                 document.getElementById('toggleLabelBtn').onclick = () => this.toggleSelectedLabel();
                 document.getElementById('toggleAllLabelsBtn').onclick = () => this.toggleAllLabels();
                 this.populateFurnitureSelector();
@@ -929,6 +931,7 @@
                         labelScale: CONFIG.defaultLabelScale,
                         labelOffset: {...CONFIG.defaultLabelOffset},
                         labelVisible: true,
+                        doorLabelVisible: true,
                         wallColor: '#6366f1'
                     };
                     this.roomCounter++;
@@ -946,7 +949,8 @@
                         textColor: CONFIG.defaultTextColor,
                         labelScale: CONFIG.defaultLabelScale,
                         labelOffset: {...CONFIG.defaultLabelOffset},
-                        labelVisible: true
+                        labelVisible: true,
+                        doorLabelVisible: true
                     };
                 } else if (type === 'generic') {
                     const geo = new THREE.BoxGeometry(4, CONFIG.floorHeight, 4);
@@ -961,7 +965,8 @@
                         textColor: CONFIG.defaultTextColor,
                         labelScale: CONFIG.defaultLabelScale,
                         labelOffset: {...CONFIG.defaultLabelOffset},
-                        labelVisible: true
+                        labelVisible: true,
+                        doorLabelVisible: true
                     };
                 } else if (type === 'stairs') {
                     mesh = new THREE.Group();
@@ -983,6 +988,7 @@
                     
                     mesh.traverse(c => { if(c.isMesh && c.visible) { c.castShadow=true; c.receiveShadow=true; } });
                     if (mesh.userData.labelText) this.addLabel(mesh, mesh.userData.labelText);
+                    else this.refreshDoorLabels(mesh);
                     if (mesh.userData.type === 'Chambre') this.setRoomWallColor(mesh, mesh.userData.wallColor || '#6366f1');
 
                     this.scene.add(mesh);
@@ -1014,6 +1020,8 @@
                 sprite.visible = this.labelsVisible && parent.userData.labelVisible !== false;
                 sprite.userData = { isLabel: true };
                 parent.add(sprite);
+
+                this.refreshDoorLabels(parent);
             }
 
             ensureLabelDefaults(obj) {
@@ -1022,6 +1030,81 @@
                 if(!obj.userData.labelScale) obj.userData.labelScale = CONFIG.defaultLabelScale;
                 if(!obj.userData.labelOffset) obj.userData.labelOffset = {...CONFIG.defaultLabelOffset};
                 if(obj.userData.labelVisible === undefined) obj.userData.labelVisible = true;
+                if(obj.userData.doorLabelVisible === undefined) obj.userData.doorLabelVisible = true;
+            }
+
+            supportsDoorBadge(obj) {
+                if(!obj || obj.userData?.isFurniture) return false;
+                const t = obj.userData.type;
+                return ['Chambre', 'Zone', 'Generic', 'Couloir'].includes(t);
+            }
+
+            getDoorLabelText(obj) {
+                if(!obj || obj.userData?.isFurniture) return '';
+                if(obj.userData.type === 'Chambre') return obj.userData.labelText || obj.userData.name || '';
+                if(obj.userData.type === 'Zone' || obj.userData.type === 'Generic' || obj.userData.type === 'Couloir') {
+                    return obj.userData.name || obj.userData.labelText || '';
+                }
+                return '';
+            }
+
+            clearDoorBadges(obj) {
+                if(!obj) return;
+                const toRemove = [];
+                obj.traverse(child => { if(child.name === 'DoorBadge') toRemove.push(child); });
+                toRemove.forEach(c => c.parent?.remove(c));
+            }
+
+            createDoorBadge(text) {
+                const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 128;
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#111827';
+                ctx.beginPath(); ctx.roundRect(16, 16, 224, 96, 20); ctx.fill();
+                ctx.strokeStyle = '#e5e7eb'; ctx.lineWidth = 6; ctx.stroke();
+                ctx.fillStyle = '#f8fafc';
+                ctx.font = text.length > 7 ? 'bold 56px Inter, Arial' : 'bold 72px Inter, Arial';
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText(text, 128, 64);
+                const texture = new THREE.CanvasTexture(canvas);
+                const material = new THREE.MeshBasicMaterial({ map: texture, transparent: true, side: THREE.DoubleSide });
+                const geometry = new THREE.PlaneGeometry(0.9, 0.45);
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.name = 'DoorBadge';
+                mesh.renderOrder = 5;
+                return mesh;
+            }
+
+            attachDoorBadgeToDoor(doorMesh, text) {
+                if(!doorMesh || !text) return false;
+                const badge = this.createDoorBadge(text);
+                badge.position.set(0, CONFIG.floorHeight * 0.45, 0.22);
+                doorMesh.add(badge);
+                return true;
+            }
+
+            attachDoorBadgeToFront(obj, text) {
+                if(!obj || !text) return false;
+                const badge = this.createDoorBadge(text);
+                const depth = (obj.geometry?.parameters?.depth || CONFIG.roomDepth) * (obj.scale?.z || 1);
+                badge.position.set(0, CONFIG.floorHeight * 0.45, (depth / 2) + 0.05);
+                obj.add(badge);
+                return true;
+            }
+
+            refreshDoorLabels(obj) {
+                if(!this.supportsDoorBadge(obj)) return;
+                this.ensureLabelDefaults(obj);
+                this.clearDoorBadges(obj);
+                const text = this.getDoorLabelText(obj);
+                if(!text || obj.userData.doorLabelVisible === false) return;
+
+                let attached = false;
+                obj.traverse(child => {
+                    if(child.userData?.type === 'door') {
+                        if(this.attachDoorBadgeToDoor(child, text)) attached = true;
+                    }
+                });
+                if(!attached) this.attachDoorBadgeToFront(obj, text);
             }
 
             refreshLabelUI(obj) {
@@ -1034,6 +1117,14 @@
                 document.getElementById('labelPosZ').value = obj.userData.labelOffset.z;
                 document.getElementById('toggleLabelBtn').innerText = obj.userData.labelVisible === false ? 'Afficher' : 'Masquer';
                 document.getElementById('toggleAllLabelsBtn').innerText = this.labelsVisible ? 'Masquer tout' : 'Afficher tout';
+                const doorBtn = document.getElementById('toggleDoorLabelBtn');
+                if(doorBtn) {
+                    const supported = this.supportsDoorBadge(obj);
+                    doorBtn.disabled = !supported;
+                    doorBtn.classList.toggle('opacity-50', !supported);
+                    doorBtn.classList.toggle('cursor-not-allowed', !supported);
+                    doorBtn.innerText = obj.userData.doorLabelVisible === false ? 'Afficher porte' : 'Masquer porte';
+                }
             }
 
             refreshFurnitureUI(obj) {
@@ -1094,6 +1185,15 @@
                 this.stateManager.snapshot();
             }
 
+            toggleDoorLabel() {
+                if(!this.selectedObject || this.selectedObject.userData.isFurniture) return;
+                if(!this.supportsDoorBadge(this.selectedObject)) return;
+                this.selectedObject.userData.doorLabelVisible = !(this.selectedObject.userData.doorLabelVisible !== false);
+                this.refreshDoorLabels(this.selectedObject);
+                this.refreshLabelUI(this.selectedObject);
+                this.stateManager.snapshot();
+            }
+
             toggleAllLabels() {
                 this.labelsVisible = !this.labelsVisible;
                 this.updateAllLabelVisibility();
@@ -1131,6 +1231,7 @@
                 item.position.set(0, item.userData.defaultY || 0, 0);
                 container.add(item);
                 this.snapObject(item);
+                this.refreshDoorLabels(target);
                 this.selectObject(item);
                 this.stateManager.snapshot();
                 this.showToast(`${item.userData.name} ajouté`, 'success');
@@ -1145,6 +1246,7 @@
                 for(let i = group.children.length - 1; i >=0; i--) {
                     if(group.children[i].userData.type === type) {
                         group.remove(group.children[i]);
+                        this.refreshDoorLabels(target);
                         this.selectObject(target);
                         this.stateManager.snapshot();
                         this.showToast('Objet retiré', 'info');
@@ -1498,8 +1600,9 @@
                 const val = document.getElementById('propName').value;
                 if(val) {
                     this.selectedObject.userData.name = val;
-                    if(this.selectedObject.userData.isFurniture) { } 
+                    if(this.selectedObject.userData.isFurniture) { }
                     else if(val.length < 5) { this.selectedObject.userData.labelText = val; this.addLabel(this.selectedObject, val); }
+                    this.refreshDoorLabels(this.selectedObject);
                     this.showToast('Nom mis à jour', 'success'); this.stateManager.snapshot();
                 }
             }
@@ -1534,6 +1637,7 @@
                             const newNum = this.roomCounter++; clone.userData.labelText = newNum.toString(); clone.userData.name = `Chambre ${newNum}`;
                             this.addLabel(clone, clone.userData.labelText);
                         }
+                        this.refreshDoorLabels(clone);
                     }
                 }
                 this.stateManager.snapshot(); this.updateStats(); this.showToast('Objet dupliqué', 'success');
@@ -1556,14 +1660,14 @@
                         objects.push({ type: obj.userData.type, position: obj.position.toArray(), rotation: obj.rotation.toArray(), scale: obj.scale.toArray(), userData: obj.userData, furniture: furniture });
                     }
                 });
-                return { version: 2.5, timestamp: Date.now(), roomCounter: this.roomCounter, floors: this.floors, objects: objects, labelsVisible: this.labelsVisible };
+                return { version: 2.6, timestamp: Date.now(), roomCounter: this.roomCounter, floors: this.floors, objects: objects, labelsVisible: this.labelsVisible };
             }
 
             saveToFile() {
                 const data = JSON.stringify(this.serializeScene(), null, 2);
                 const blob = new Blob([data], {type: 'application/json'});
                 const url = URL.createObjectURL(blob);
-                const a = document.createElement('a'); a.href = url; a.download = `flexilogis_v2.5_${new Date().toISOString().slice(0,10)}.json`; a.click();
+                const a = document.createElement('a'); a.href = url; a.download = `flexilogis_v2.6_${new Date().toISOString().slice(0,10)}.json`; a.click();
                 this.showToast('Projet sauvegardé', 'success');
             }
 
@@ -1581,6 +1685,7 @@
                         this.ensureLabelDefaults(obj);
                         if(obj.userData.labelText) this.addLabel(obj, obj.userData.labelText);
                         if(obj.userData.type === 'Chambre') this.setRoomWallColor(obj, obj.userData.wallColor || '#6366f1');
+                        this.refreshDoorLabels(obj);
                         if(obj.userData.labelColor) this.selectedObject = obj;
                     }
                     this.floors.current = savedCurrent;
