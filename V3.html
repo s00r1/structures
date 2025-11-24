@@ -2064,7 +2064,7 @@
             }
 
               selectObject(obj) {
-                  if(!obj) this.selectionLocked = false;
+                  this.selectionLocked = !!obj;
                   this.selectedObject = obj;
                   const panel = document.getElementById('propPanel');
                   const dupInput = document.getElementById('duplicateFloorTarget');
