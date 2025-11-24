@@ -2070,17 +2070,17 @@
                 const scope = target || this.getEffectiveOpacityTarget(obj);
                 if(obj.userData?.type === 'Chambre') {
                     if(scope === 'furniture') {
-                        const targets = [];
+                        const targets = new Set();
                         const furniture = obj.getObjectByName('Furniture');
-                        if(furniture) targets.push(furniture);
+                        if(furniture) targets.add(furniture);
 
-                        obj.children.forEach(child => {
-                            if(child === furniture) return;
+                        obj.traverse(child => {
+                            if(child === obj) return;
                             if(child.name === 'RoomShell' || child.name === 'StructureHitbox' || child.name === 'Label') return;
-                            targets.push(child);
+                            if(child.userData?.isFurniture) targets.add(child);
                         });
 
-                        return targets;
+                        return Array.from(targets);
                     }
                     const shell = obj.getObjectByName('RoomShell');
                     return shell ? [shell] : [obj];
