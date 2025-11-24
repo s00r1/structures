@@ -1868,6 +1868,7 @@
                     document.getElementById('propName').value = obj.userData.name || '';
                     if(!obj.userData.isFurniture) this.setColorTarget(this.colorTarget);
 
+                    this.control.showX = this.control.showY = this.control.showZ = true;
                     if(obj.userData.isFurniture) {
                         document.getElementById('propTitle').innerText = "MOBILIER";
                         document.getElementById('colorSection').classList.add('hidden');
@@ -1876,7 +1877,6 @@
                           document.getElementById('furnitureSection').classList.add('hidden');
                           document.getElementById('furnitureTransformSection').classList.remove('hidden');
                           this.refreshFurnitureUI(obj);
-                          this.control.showY = true;
                           this.refreshBreakerUI(obj);
                       } else {
                           document.getElementById('propTitle').innerText = "PROPRIÉTÉS";
@@ -1886,7 +1886,6 @@
                           document.getElementById('furnitureSection').classList.remove('hidden');
                           document.getElementById('furnitureTransformSection').classList.add('hidden');
                           this.refreshLabelUI(obj);
-                          this.control.showY = false;
                           this.refreshBreakerUI(null);
                       }
                       if(dupInput) dupInput.value = obj.userData.floor ?? this.floors.current;
