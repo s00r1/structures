@@ -451,6 +451,19 @@
                 <div class="text-[10px] text-slate-500 mt-1">Ajuste la visibilité de l'objet ou structure sélectionné(e).</div>
             </div>
 
+            <!-- Wall Manager -->
+            <div id="wallSection" class="mb-4 space-y-2 hidden">
+                <div class="flex items-center justify-between">
+                    <label class="block text-[10px] font-bold text-gray-500">MURS DE LA CHAMBRE</label>
+                    <span class="text-[10px] text-gray-400">Ouverture guidée</span>
+                </div>
+                <div class="flex gap-2 items-center">
+                    <select id="wallSelector" class="flex-1 bg-white border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"></select>
+                    <button id="removeWallBtn" class="px-2 bg-red-50 text-red-600 border border-red-200 rounded text-xs font-bold hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed">Suppr.</button>
+                </div>
+                <p class="text-[10px] text-slate-500">Choisissez un mur de la chambre sélectionnée pour le retirer.</p>
+            </div>
+
             <!-- Presets Size -->
             <div id="sizeSection" class="mb-2">
                  <label class="block text-[10px] font-bold text-gray-500 mb-1">TAILLE RAPIDE</label>
@@ -1062,6 +1075,109 @@
                   if(force || !room.userData.roomId) room.userData.roomId = this.makeRoomId();
               }
 
+              ensureRoomWallMetadata(room) {
+                  if(!room || room.userData?.type !== 'Chambre') return;
+                  if(!Array.isArray(room.userData.walls)) {
+                      room.userData.walls = ['north','south','east','west'];
+                  }
+                  const shell = room.getObjectByName('RoomShell');
+                  if(!shell) return;
+                  shell.children.forEach(child => {
+                      if(child.userData?.isWall && !child.userData.orientation) {
+                          child.userData.orientation = this.detectWallOrientation(child);
+                      }
+                  });
+              }
+
+              detectWallOrientation(wall) {
+                  if(!wall) return null;
+                  const pos = wall.position;
+                  const w = CONFIG.roomWidth, d = CONFIG.roomDepth;
+                  const tol = 0.2;
+                  if(Math.abs(pos.z + d/2 - 0.1) < tol) return 'north';
+                  if(Math.abs(pos.z - (d/2 - 0.1)) < tol) return 'south';
+                  if(Math.abs(pos.x + w/2 - 0.1) < tol) return 'west';
+                  if(Math.abs(pos.x - (w/2 - 0.1)) < tol) return 'east';
+                  return wall.userData?.orientation || null;
+              }
+
+              getRoomWalls(room) {
+                  if(!room || room.userData?.type !== 'Chambre') return [];
+                  this.ensureRoomWallMetadata(room);
+                  const shell = room.getObjectByName('RoomShell');
+                  if(!shell) return [];
+                  const labels = { north: 'Nord', south: 'Sud', east: 'Est', west: 'Ouest' };
+                  const walls = [];
+                  shell.children.forEach(child => {
+                      if(child.userData?.isWall) {
+                          const orientation = child.userData.orientation || this.detectWallOrientation(child);
+                          if(orientation) {
+                              child.userData.orientation = orientation;
+                              walls.push({ mesh: child, orientation, label: labels[orientation] || orientation });
+                          }
+                      }
+                  });
+                  return walls;
+              }
+
+              applyRoomWallState(room) {
+                  if(!room || room.userData?.type !== 'Chambre') return;
+                  this.ensureRoomWallMetadata(room);
+                  const desired = new Set(Array.isArray(room.userData.walls) ? room.userData.walls : ['north','south','east','west']);
+                  const shell = room.getObjectByName('RoomShell');
+                  if(!shell) return;
+                  shell.children
+                      .filter(child => child.userData?.isWall)
+                      .forEach(child => {
+                          const orientation = child.userData.orientation || this.detectWallOrientation(child);
+                          if(!orientation) return;
+                          child.userData.orientation = orientation;
+                          if(!desired.has(orientation)) shell.remove(child);
+                      });
+                  room.userData.walls = Array.from(desired);
+              }
+
+              refreshWallUI(room) {
+                  const section = document.getElementById('wallSection');
+                  const select = document.getElementById('wallSelector');
+                  const btn = document.getElementById('removeWallBtn');
+                  if(!section || !select || !btn) return;
+                  if(!room || room.userData?.type !== 'Chambre') {
+                      section.classList.add('hidden');
+                      select.innerHTML = '';
+                      btn.disabled = true;
+                      return;
+                  }
+                  const walls = this.getRoomWalls(room);
+                  select.innerHTML = '';
+                  walls.forEach(w => {
+                      const opt = document.createElement('option');
+                      opt.value = w.orientation; opt.textContent = w.label;
+                      select.appendChild(opt);
+                  });
+                  section.classList.toggle('hidden', walls.length === 0);
+                  btn.disabled = walls.length === 0;
+              }
+
+              removeSelectedWall() {
+                  if(!this.selectedObject || this.selectedObject.userData?.type !== 'Chambre') return;
+                  const room = this.selectedObject;
+                  const select = document.getElementById('wallSelector');
+                  if(!select || !select.value) { this.showToast('Sélectionnez un mur', 'error'); return; }
+                  const shell = room.getObjectByName('RoomShell');
+                  if(!shell) return;
+                  const walls = this.getRoomWalls(room);
+                  const target = walls.find(w => w.orientation === select.value);
+                  if(!target) { this.showToast('Mur introuvable', 'error'); return; }
+                  shell.remove(target.mesh);
+                  const currentList = Array.isArray(room.userData.walls) ? room.userData.walls : [];
+                  room.userData.walls = currentList.filter(o => o !== target.orientation);
+                  this.applyRoomWallState(room);
+                  this.refreshWallUI(room);
+                  this.stateManager.snapshot();
+                  this.showToast(`Mur ${target.label} supprimé`, 'success');
+              }
+
               listRooms() {
                   const rooms = [];
                   this.scene.traverse(o => { if(o.userData?.type === 'Chambre') rooms.push(o); });
@@ -1152,6 +1268,7 @@
                 document.getElementById('resetBtn').onclick = () => this.resetScene();
                 document.getElementById('undoBtn').onclick = () => this.stateManager.undo();
                 document.getElementById('redoBtn').onclick = () => this.stateManager.redo();
+                document.getElementById('removeWallBtn').onclick = () => this.removeSelectedWall();
                 document.getElementById('rotateClockwise').onclick = () => this.applyPresetRotation('cw');
                 document.getElementById('rotateCounter').onclick = () => this.applyPresetRotation('ccw');
                 document.getElementById('opacityTargetWalls').onclick = () => this.setOpacityTarget('walls');
@@ -1225,10 +1342,10 @@
                     floor.position.y = 0.1; floor.receiveShadow = true; floor.userData = { isFloor: true }; shellGroup.add(floor);
                     
                     // Murs Pleins (4 Côtés)
-                    const back = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.2), matWall.clone()); back.position.set(0, h/2, -d/2+0.1); back.userData = { isWall: true }; shellGroup.add(back);
-                    const front = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.2), matWall.clone()); front.position.set(0, h/2, d/2-0.1); front.userData = { isWall: true }; shellGroup.add(front);
-                    const left = new THREE.Mesh(new THREE.BoxGeometry(0.2, h, d), matWall.clone()); left.position.set(-w/2+0.1, h/2, 0); left.userData = { isWall: true }; shellGroup.add(left);
-                    const right = new THREE.Mesh(new THREE.BoxGeometry(0.2, h, d), matWall.clone()); right.position.set(w/2-0.1, h/2, 0); right.userData = { isWall: true }; shellGroup.add(right);
+                    const back = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.2), matWall.clone()); back.position.set(0, h/2, -d/2+0.1); back.userData = { isWall: true, orientation: 'north' }; back.name = 'Wall-North'; shellGroup.add(back);
+                    const front = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.2), matWall.clone()); front.position.set(0, h/2, d/2-0.1); front.userData = { isWall: true, orientation: 'south' }; front.name = 'Wall-South'; shellGroup.add(front);
+                    const left = new THREE.Mesh(new THREE.BoxGeometry(0.2, h, d), matWall.clone()); left.position.set(-w/2+0.1, h/2, 0); left.userData = { isWall: true, orientation: 'west' }; left.name = 'Wall-West'; shellGroup.add(left);
+                    const right = new THREE.Mesh(new THREE.BoxGeometry(0.2, h, d), matWall.clone()); right.position.set(w/2-0.1, h/2, 0); right.userData = { isWall: true, orientation: 'east' }; right.name = 'Wall-East'; shellGroup.add(right);
                     
                     mesh.add(shellGroup);
 
@@ -1281,6 +1398,7 @@
                           doorLabelVisible: true,
                           roomId: this.makeRoomId(),
                           wallColor: '#6366f1',
+                          walls: ['north','south','east','west'],
                           opacity: 1,
                           wallOpacity: 1,
                           furnitureOpacity: 1
@@ -1342,7 +1460,10 @@
                     this.applyStoredOpacityToObject(mesh);
                     if (mesh.userData.labelText) this.addLabel(mesh, mesh.userData.labelText);
                     else this.refreshDoorLabels(mesh);
-                    if (mesh.userData.type === 'Chambre') this.setRoomWallColor(mesh, mesh.userData.wallColor || '#6366f1');
+                    if (mesh.userData.type === 'Chambre') {
+                        this.setRoomWallColor(mesh, mesh.userData.wallColor || '#6366f1');
+                        this.applyRoomWallState(mesh);
+                    }
 
                     this.scene.add(mesh);
                     this.selectObject(mesh);
@@ -1949,11 +2070,12 @@
                   const dupInput = document.getElementById('duplicateFloorTarget');
 
                   if (obj) {
-                      this.control.attach(obj);
-                      panel.classList.remove('opacity-50', 'pointer-events-none', 'scale-95');
-                      panel.classList.add('opacity-100', 'scale-100');
+                    this.control.attach(obj);
+                    panel.classList.remove('opacity-50', 'pointer-events-none', 'scale-95');
+                    panel.classList.add('opacity-100', 'scale-100');
                     document.getElementById('propName').value = obj.userData.name || '';
                     this.setColorTarget(this.colorTarget);
+                    this.refreshWallUI(obj);
                     this.refreshOpacityUI(obj);
 
                     this.control.showX = this.control.showY = this.control.showZ = true;
@@ -1979,14 +2101,15 @@
                       this.updateColorControlsForSelection(obj);
                       if(dupInput) dupInput.value = obj.userData.floor ?? this.floors.current;
                       } else {
-                          this.control.detach();
-                          panel.classList.add('opacity-50', 'pointer-events-none', 'scale-95');
-                          document.getElementById('furnitureTransformSection').classList.add('hidden');
-                          this.refreshBreakerUI(null);
-                          this.refreshOpacityUI(null);
-                          this.updateColorControlsForSelection(null);
-                          if(dupInput) dupInput.value = this.floors.current;
-                      }
+                    this.control.detach();
+                    panel.classList.add('opacity-50', 'pointer-events-none', 'scale-95');
+                    document.getElementById('furnitureTransformSection').classList.add('hidden');
+                    this.refreshBreakerUI(null);
+                    this.refreshOpacityUI(null);
+                    this.refreshWallUI(null);
+                    this.updateColorControlsForSelection(null);
+                    if(dupInput) dupInput.value = this.floors.current;
+                }
                   this.updateSelectionChips();
                   this.updateSelectionLockUI();
               }
@@ -2039,7 +2162,10 @@
                           clone.userData.floor = this.floors.current;
                           if(clone.userData.type === 'Chambre') this.ensureRoomId(clone, true);
                           this.ensureLabelDefaults(clone);
-                          if(clone.userData.type === 'Chambre') this.setRoomWallColor(clone, clone.userData.wallColor || '#6366f1');
+                          if(clone.userData.type === 'Chambre') {
+                              this.setRoomWallColor(clone, clone.userData.wallColor || '#6366f1');
+                              this.applyRoomWallState(clone);
+                          }
                           if(clone.userData.labelText) this.addLabel(clone, clone.userData.labelText);
                       }
                 });
@@ -2465,7 +2591,10 @@
                         clone.userData.floor = targetFloor;
                         if(clone.userData.type === 'Chambre') this.ensureRoomId(clone, true);
                         this.ensureLabelDefaults(clone);
-                        if(clone.userData.type === 'Chambre') this.setRoomWallColor(clone, clone.userData.wallColor || '#6366f1');
+                        if(clone.userData.type === 'Chambre') {
+                            this.setRoomWallColor(clone, clone.userData.wallColor || '#6366f1');
+                            this.applyRoomWallState(clone);
+                        }
                         this.applyStoredOpacityToObject(clone);
                         if(!isNaN(parseInt(clone.userData.labelText))) {
                           const newNum = this.roomCounter++; clone.userData.labelText = newNum.toString(); clone.userData.name = `Chambre ${newNum}`;
@@ -2526,7 +2655,10 @@
                           if(obj.userData.type === 'Chambre') this.ensureRoomId(obj);
                           this.ensureLabelDefaults(obj);
                           if(obj.userData.labelText) this.addLabel(obj, obj.userData.labelText);
-                          if(obj.userData.type === 'Chambre') this.setRoomWallColor(obj, obj.userData.wallColor || '#6366f1');
+                          if(obj.userData.type === 'Chambre') {
+                              this.setRoomWallColor(obj, obj.userData.wallColor || '#6366f1');
+                              this.applyRoomWallState(obj);
+                          }
                         this.applyStoredOpacityToObject(obj);
                         this.refreshDoorLabels(obj);
                         if(obj.userData.labelColor) this.selectedObject = obj;
