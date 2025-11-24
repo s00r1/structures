@@ -243,6 +243,69 @@
             </div>
         </div>
 
+        <!-- Exterior Elements -->
+        <div class="glass-panel p-3 rounded-xl flex-1 overflow-y-auto">
+            <span class="text-xs font-bold text-gray-400 uppercase block mb-2">Zone extérieure</span>
+            <div class="grid grid-cols-2 gap-2">
+                <button onclick="app.createExterior('pelouse')" class="flex items-center gap-2 p-2 bg-white border border-green-200 rounded-lg hover:border-green-400 transition text-left">
+                    <div class="w-8 h-8 rounded bg-green-100 text-green-700 flex items-center justify-center"><i data-lucide="sprout" size="16"></i></div>
+                    <div class="flex-1">
+                        <div class="text-xs font-bold text-gray-700">Pelouse</div>
+                        <div class="text-[10px] text-gray-400">Surface herbeuse</div>
+                    </div>
+                </button>
+                <button onclick="app.createExterior('arbre')" class="flex items-center gap-2 p-2 bg-white border border-emerald-200 rounded-lg hover:border-emerald-400 transition text-left">
+                    <div class="w-8 h-8 rounded bg-emerald-100 text-emerald-700 flex items-center justify-center"><i data-lucide="trees" size="16"></i></div>
+                    <div class="flex-1">
+                        <div class="text-xs font-bold text-gray-700">Arbre</div>
+                        <div class="text-[10px] text-gray-400">Volume vertical</div>
+                    </div>
+                </button>
+                <button onclick="app.createExterior('buisson')" class="flex items-center gap-2 p-2 bg-white border border-lime-200 rounded-lg hover:border-lime-400 transition text-left">
+                    <div class="w-8 h-8 rounded bg-lime-100 text-lime-700 flex items-center justify-center"><i data-lucide="leaf" size="16"></i></div>
+                    <div class="flex-1">
+                        <div class="text-xs font-bold text-gray-700">Buisson</div>
+                        <div class="text-[10px] text-gray-400">Masse basse</div>
+                    </div>
+                </button>
+                <button onclick="app.createExterior('haie')" class="flex items-center gap-2 p-2 bg-white border border-emerald-200 rounded-lg hover:border-emerald-400 transition text-left">
+                    <div class="w-8 h-8 rounded bg-emerald-50 text-emerald-700 flex items-center justify-center"><i data-lucide="wall" size="16"></i></div>
+                    <div class="flex-1">
+                        <div class="text-xs font-bold text-gray-700">Haie</div>
+                        <div class="text-[10px] text-gray-400">Séparation végétale</div>
+                    </div>
+                </button>
+                <button onclick="app.createExterior('portail')" class="flex items-center gap-2 p-2 bg-white border border-slate-200 rounded-lg hover:border-slate-400 transition text-left">
+                    <div class="w-8 h-8 rounded bg-slate-100 text-slate-700 flex items-center justify-center"><i data-lucide="door-open" size="16"></i></div>
+                    <div class="flex-1">
+                        <div class="text-xs font-bold text-gray-700">Portail</div>
+                        <div class="text-[10px] text-gray-400">Accès extérieur</div>
+                    </div>
+                </button>
+                <button onclick="app.createExterior('poubelle')" class="flex items-center gap-2 p-2 bg-white border border-slate-200 rounded-lg hover:border-slate-400 transition text-left">
+                    <div class="w-8 h-8 rounded bg-slate-100 text-slate-700 flex items-center justify-center"><i data-lucide="trash-2" size="16"></i></div>
+                    <div class="flex-1">
+                        <div class="text-xs font-bold text-gray-700">Poubelle</div>
+                        <div class="text-[10px] text-gray-400">Gestion déchets</div>
+                    </div>
+                </button>
+                <button onclick="app.createExterior('grillage')" class="flex items-center gap-2 p-2 bg-white border border-blue-200 rounded-lg hover:border-blue-400 transition text-left">
+                    <div class="w-8 h-8 rounded bg-blue-50 text-blue-700 flex items-center justify-center"><i data-lucide="grid" size="16"></i></div>
+                    <div class="flex-1">
+                        <div class="text-xs font-bold text-gray-700">Grillage</div>
+                        <div class="text-[10px] text-gray-400">Clôture légère</div>
+                    </div>
+                </button>
+                <button onclick="app.createExterior('parking')" class="flex items-center gap-2 p-2 bg-white border border-amber-200 rounded-lg hover:border-amber-400 transition text-left">
+                    <div class="w-8 h-8 rounded bg-amber-50 text-amber-700 flex items-center justify-center"><i data-lucide="car" size="16"></i></div>
+                    <div class="flex-1">
+                        <div class="text-xs font-bold text-gray-700">Parking</div>
+                        <div class="text-[10px] text-gray-400">Stationnement</div>
+                    </div>
+                </button>
+            </div>
+        </div>
+
         <!-- Statistics -->
         <div class="glass-panel p-3 rounded-xl">
             <span class="text-xs font-bold text-gray-400 uppercase block mb-2">Statistiques Projet</span>
@@ -448,7 +511,15 @@
                     <button id="removeFurnitureBtn" class="px-2 bg-red-50 text-red-600 border border-red-200 rounded text-xs font-bold hover:bg-red-100">Suppr.</button>
                 </div>
             </div>
-            
+
+            <div class="mb-3">
+                <label class="block text-[10px] font-bold text-gray-500 mb-1">Dupliquer vers un étage</label>
+                <div class="flex gap-2 items-center">
+                    <input id="duplicateFloorTarget" type="number" min="0" class="flex-1 bg-white border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
+                    <span class="text-[10px] text-gray-400">RDC=0</span>
+                </div>
+            </div>
+
             <button id="duplicateBtn" class="w-full mt-2 py-2 bg-yellow-50 text-yellow-700 text-xs font-bold rounded border border-yellow-200 hover:bg-yellow-100 flex items-center justify-center gap-2">
                 <i data-lucide="copy" size="14"></i> Dupliquer Objet
             </button>
@@ -488,6 +559,7 @@
         const CONFIG = {
             gridSize: 0.5,
             floorHeight: 3.5,
+            floorGap: 0.5,
             colors: [
                 '#6366f1', '#3b82f6', '#0ea5e9', '#14b8a6',
                 '#22c55e', '#84cc16', '#eab308', '#f97316', 
@@ -681,6 +753,83 @@
             }
         };
 
+        const ExteriorFactory = {
+            pelouse: () => {
+                const geo = new THREE.BoxGeometry(6, 0.05, 6);
+                const mat = new THREE.MeshStandardMaterial({ color: '#22c55e', roughness: 0.8 });
+                const mesh = new THREE.Mesh(geo, mat);
+                mesh.receiveShadow = true;
+                mesh.userData = { type: 'Exterieur', element: 'pelouse', name: 'Pelouse' };
+                return mesh;
+            },
+            arbre: () => {
+                const group = new THREE.Group();
+                const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.35, 2, 8), new THREE.MeshStandardMaterial({ color: '#92400e' }));
+                trunk.position.y = 1;
+                const foliage = new THREE.Mesh(new THREE.ConeGeometry(1.2, 2.4, 8), new THREE.MeshStandardMaterial({ color: '#166534' }));
+                foliage.position.y = 2.8;
+                group.add(trunk, foliage);
+                group.userData = { type: 'Exterieur', element: 'arbre', name: 'Arbre' };
+                return group;
+            },
+            buisson: () => {
+                const geo = new THREE.SphereGeometry(1.2, 12, 12);
+                const mat = new THREE.MeshStandardMaterial({ color: '#16a34a' });
+                const mesh = new THREE.Mesh(geo, mat); mesh.position.y = 1.1;
+                mesh.userData = { type: 'Exterieur', element: 'buisson', name: 'Buisson' };
+                return mesh;
+            },
+            haie: () => {
+                const geo = new THREE.BoxGeometry(4, 1.2, 0.6);
+                const mat = new THREE.MeshStandardMaterial({ color: '#15803d' });
+                const mesh = new THREE.Mesh(geo, mat); mesh.position.y = 0.6;
+                mesh.userData = { type: 'Exterieur', element: 'haie', name: 'Haie' };
+                return mesh;
+            },
+            portail: () => {
+                const group = new THREE.Group();
+                const frame = new THREE.Mesh(new THREE.BoxGeometry(4, 2, 0.2), new THREE.MeshStandardMaterial({ color: '#475569' }));
+                frame.position.y = 1;
+                const door = new THREE.Mesh(new THREE.BoxGeometry(3.6, 1.6, 0.1), new THREE.MeshStandardMaterial({ color: '#94a3b8' }));
+                door.position.y = 1;
+                group.add(frame, door);
+                group.userData = { type: 'Exterieur', element: 'portail', name: 'Portail' };
+                return group;
+            },
+            poubelle: () => {
+                const body = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.5, 1.2, 10), new THREE.MeshStandardMaterial({ color: '#0f172a' }));
+                body.position.y = 0.6;
+                const lid = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 0.1, 10), new THREE.MeshStandardMaterial({ color: '#1e293b' }));
+                lid.position.y = 1.2;
+                const group = new THREE.Group(); group.add(body, lid);
+                group.userData = { type: 'Exterieur', element: 'poubelle', name: 'Poubelle' };
+                return group;
+            },
+            grillage: () => {
+                const posts = new THREE.Group();
+                for(let i = 0; i < 5; i++) {
+                    const post = new THREE.Mesh(new THREE.BoxGeometry(0.1, 1.4, 0.1), new THREE.MeshStandardMaterial({ color: '#475569' }));
+                    post.position.set(-2 + i, 0.7, 0);
+                    posts.add(post);
+                }
+                const mesh = new THREE.Mesh(new THREE.BoxGeometry(4, 1, 0.05), new THREE.MeshStandardMaterial({ color: '#cbd5e1', transparent: true, opacity: 0.5 }));
+                mesh.position.y = 0.9;
+                const group = new THREE.Group(); group.add(posts, mesh);
+                group.userData = { type: 'Exterieur', element: 'grillage', name: 'Grillage' };
+                return group;
+            },
+            parking: () => {
+                const base = new THREE.Mesh(new THREE.BoxGeometry(6, 0.05, 4), new THREE.MeshStandardMaterial({ color: '#cbd5e1' }));
+                base.receiveShadow = true;
+                const line = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.06, 3.6), new THREE.MeshStandardMaterial({ color: '#eab308' }));
+                line.position.set(0, 0.04, 0);
+                const group = new THREE.Group();
+                group.add(base, line);
+                group.userData = { type: 'Exterieur', element: 'parking', name: 'Parking' };
+                return group;
+            }
+        };
+
         // --- STATE MANAGEMENT ---
         class StateManager {
             constructor(app) {
@@ -749,6 +898,10 @@
                 this.init();
             }
 
+            getFloorY(floorIndex) {
+                return floorIndex * (CONFIG.floorHeight + CONFIG.floorGap);
+            }
+
             init() {
                 this.scene = new THREE.Scene();
                 this.scene.background = new THREE.Color('#e0f2fe');
@@ -767,8 +920,10 @@
                 sun.shadow.mapSize.width = 2048; sun.shadow.mapSize.height = 2048;
                 const d = 60; sun.shadow.camera.left = -d; sun.shadow.camera.right = d; sun.shadow.camera.top = d; sun.shadow.camera.bottom = -d;
                 sun.shadow.bias = -0.0005; this.scene.add(sun);
-                
-                this.gridHelper = new THREE.GridHelper(100, 200, 0x94a3b8, 0xcbd5e1); this.scene.add(this.gridHelper);
+
+                this.gridHelper = new THREE.GridHelper(100, 200, 0x94a3b8, 0xcbd5e1);
+                this.gridHelper.position.y = this.getFloorY(this.floors.current);
+                this.scene.add(this.gridHelper);
                 const planeGeo = new THREE.PlaneGeometry(200, 200);
                 const planeMat = new THREE.ShadowMaterial({ opacity: 0.05, color: 0x000000 });
                 const ground = new THREE.Mesh(planeGeo, planeMat);
@@ -792,7 +947,8 @@
                 lucide.createIcons();
                 document.getElementById('loader').style.opacity = 0; setTimeout(() => document.getElementById('loader').remove(), 500);
 
-                this.createBlock('room'); 
+                this.createBlock('room');
+                this.updateUI();
                 this.stateManager.snapshot(); this.updateStats();
             }
 
@@ -859,9 +1015,10 @@
                 });
             }
 
-            createBlock(type, furnitureList = null) {
+            createBlock(type, furnitureList = null, floorOverride = null) {
                 let mesh;
-                const yPos = this.floors.current * CONFIG.floorHeight;
+                const targetFloor = floorOverride ?? this.floors.current;
+                const yPos = this.getFloorY(targetFloor);
                 const randX = Math.round((Math.random() * 4 - 2)) * 1;
                 const randZ = Math.round((Math.random() * 4 - 2)) * 1;
 
@@ -982,7 +1139,7 @@
 
                 if (mesh) {
                     mesh.position.set(randX, yPos, randZ);
-                    mesh.userData.floor = this.floors.current;
+                    mesh.userData.floor = targetFloor;
                     mesh.userData.labelColor = CONFIG.defaultLabelColor;
                     mesh.userData.textColor = CONFIG.defaultTextColor;
                     
@@ -996,6 +1153,30 @@
                     this.stateManager.snapshot(); this.updateStats(); this.showToast(`${mesh.userData.name} créé`, 'success');
                 }
                 return mesh;
+            }
+
+            createExterior(type, floorOverride = 0) {
+                const factory = ExteriorFactory[type];
+                if(!factory) { this.showToast('Élément extérieur inconnu', 'error'); return null; }
+                const element = factory();
+                const randX = Math.round((Math.random() * 8 - 4));
+                const randZ = Math.round((Math.random() * 8 - 4));
+                const targetFloor = floorOverride ?? 0;
+                element.position.set(randX, this.getFloorY(targetFloor), randZ);
+                element.userData.floor = targetFloor;
+                element.userData.labelColor = CONFIG.defaultLabelColor;
+                element.userData.textColor = CONFIG.defaultTextColor;
+                element.userData.labelScale = CONFIG.defaultLabelScale;
+                element.userData.labelOffset = {...CONFIG.defaultLabelOffset};
+                element.userData.labelVisible = false;
+                element.userData.isExterior = true;
+                this.scene.add(element);
+                if(targetFloor > this.floors.max) { this.floors.max = targetFloor; this.updateUI(); }
+                this.updateFloorVisibility();
+                this.selectObject(element);
+                this.stateManager.snapshot(); this.updateStats();
+                this.showToast(`${element.userData.name} ajoutée`, 'success');
+                return element;
             }
 
             addLabel(parent, text) {
@@ -1319,7 +1500,7 @@
                     if(this.control.mode === 'translate') {
                         obj.position.x = Math.round(obj.position.x / CONFIG.gridSize) * CONFIG.gridSize;
                         obj.position.z = Math.round(obj.position.z / CONFIG.gridSize) * CONFIG.gridSize;
-                        obj.position.y = obj.userData.floor * CONFIG.floorHeight;
+                        obj.position.y = this.getFloorY(obj.userData.floor || 0);
                     } else if (this.control.mode === 'rotate') {
                         obj.rotation.x = 0; obj.rotation.z = 0;
                         obj.rotation.y = Math.round(obj.rotation.y / (Math.PI/2)) * (Math.PI/2);
@@ -1384,7 +1565,8 @@
             selectObject(obj) {
                 this.selectedObject = obj;
                 const panel = document.getElementById('propPanel');
-                
+                const dupInput = document.getElementById('duplicateFloorTarget');
+
                 if (obj) {
                     this.control.attach(obj);
                     panel.classList.remove('opacity-50', 'pointer-events-none', 'scale-95');
@@ -1411,10 +1593,12 @@
                         this.refreshLabelUI(obj);
                         this.control.showY = false;
                     }
+                    if(dupInput) dupInput.value = obj.userData.floor ?? this.floors.current;
                 } else {
                     this.control.detach();
                     panel.classList.add('opacity-50', 'pointer-events-none', 'scale-95');
                     document.getElementById('furnitureTransformSection').classList.add('hidden');
+                    if(dupInput) dupInput.value = this.floors.current;
                 }
                 this.updateSelectionChips();
             }
@@ -1433,7 +1617,7 @@
                 if (next < 0 || next > this.floors.max) return;
                 this.floors.current = next;
                 this.updateFloorVisibility(); this.updateUI(); this.selectObject(null);
-                this.gridHelper.position.y = this.floors.current * CONFIG.floorHeight;
+                this.gridHelper.position.y = this.getFloorY(this.floors.current);
                 this.updateSelectionChips();
             }
 
@@ -1450,7 +1634,9 @@
                     const furnitureList = [];
                     const fGroup = original.getObjectByName('Furniture');
                     if(fGroup) fGroup.children.forEach(c => furnitureList.push({type: c.userData.type, pos: c.position.toArray(), rot: c.rotation.toArray()}));
-                    const clone = this.createBlock(original.userData.type === 'Chambre' ? 'room' : original.userData.type === 'Couloir' ? 'corridor' : 'generic', furnitureList);
+                    if(original.userData.type === 'Exterieur') return;
+                    const baseType = original.userData.type === 'Chambre' ? 'room' : original.userData.type === 'Couloir' ? 'corridor' : (original.userData.type === 'Escalier' ? 'stairs' : 'generic');
+                    const clone = this.createBlock(baseType, furnitureList);
                     if(clone) {
                         clone.position.x = original.position.x; clone.position.z = original.position.z; clone.rotation.copy(original.rotation);
                         clone.userData = JSON.parse(JSON.stringify(original.userData));
@@ -1494,7 +1680,7 @@
                 document.getElementById('viewGlobal').classList.toggle('active', isGlobal);
                 document.getElementById('viewGlobal').classList.toggle('bg-white/50', !isGlobal);
                 this.selectObject(null); this.control.enabled = !isGlobal; this.gridHelper.visible = !isGlobal;
-                if(isGlobal) { this.camera.position.set(50, 50, 50); this.camera.lookAt(0, (this.floors.max * CONFIG.floorHeight)/2, 0); }
+                if(isGlobal) { this.camera.position.set(50, 50, 50); this.camera.lookAt(0, (this.floors.max * (CONFIG.floorHeight + CONFIG.floorGap))/2, 0); }
                 else { this.changeFloor(0); }
                 document.getElementById('viewHint').textContent = isGlobal ? 'Vue globale multi-niveaux' : 'Exploration étage en cours';
                 this.updateFloorVisibility();
@@ -1618,6 +1804,14 @@
 
             duplicateSelection() {
                 if(!this.selectedObject) return;
+                const dupInput = document.getElementById('duplicateFloorTarget');
+                let targetFloor = this.floors.current;
+                if(dupInput) {
+                    const parsed = parseInt(dupInput.value);
+                    if(!isNaN(parsed)) targetFloor = Math.max(0, parsed);
+                }
+                if(targetFloor > this.floors.max) { this.floors.max = targetFloor; this.updateUI(); }
+
                 if(this.selectedObject.userData.isFurniture) {
                     const clone = this.selectedObject.clone();
                     clone.position.x += 0.5; clone.position.z += 0.5;
@@ -1627,20 +1821,30 @@
                     const furnitureList = [];
                     const fGroup = original.getObjectByName('Furniture');
                     if(fGroup) fGroup.children.forEach(c => furnitureList.push({type: c.userData.type, pos: c.position.toArray(), rot: c.rotation.toArray()}));
-                    const clone = this.createBlock(original.userData.type === 'Chambre' ? 'room' : original.userData.type, furnitureList);
+                    const baseType = original.userData.type === 'Chambre' ? 'room' : original.userData.type === 'Couloir' ? 'corridor' : (original.userData.type === 'Escalier' ? 'stairs' : 'generic');
+                    let clone;
+                    if(original.userData.type === 'Exterieur') {
+                        clone = this.createExterior(original.userData.element, targetFloor);
+                    } else {
+                        clone = this.createBlock(baseType, furnitureList, targetFloor);
+                    }
                     if(clone) {
-                        clone.position.copy(original.position); clone.position.x += 2; clone.position.z += 2; clone.rotation.copy(original.rotation);
+                        const offset = targetFloor === original.userData.floor ? 2 : 0;
+                        clone.position.set(original.position.x + offset, this.getFloorY(targetFloor), original.position.z + offset);
+                        clone.rotation.copy(original.rotation);
                         clone.userData = JSON.parse(JSON.stringify(original.userData));
+                        clone.userData.floor = targetFloor;
                         this.ensureLabelDefaults(clone);
                         if(clone.userData.type === 'Chambre') this.setRoomWallColor(clone, clone.userData.wallColor || '#6366f1');
-                         if(!isNaN(parseInt(clone.userData.labelText))) {
+                        if(!isNaN(parseInt(clone.userData.labelText))) {
                             const newNum = this.roomCounter++; clone.userData.labelText = newNum.toString(); clone.userData.name = `Chambre ${newNum}`;
                             this.addLabel(clone, clone.userData.labelText);
                         }
                         this.refreshDoorLabels(clone);
                     }
                 }
-                this.stateManager.snapshot(); this.updateStats(); this.showToast('Objet dupliqué', 'success');
+                this.updateFloorVisibility();
+                this.stateManager.snapshot(); this.updateStats(); this.showToast(`Objet dupliqué vers ${this.formatFloorLabel(targetFloor)}`, 'success');
             }
 
             deleteSelection() {
@@ -1680,8 +1884,10 @@
                     else if(data.type === 'Couloir') obj = this.createBlock('corridor');
                     else if(data.type === 'Zone' || data.type === 'Generic') obj = this.createBlock('generic');
                     else if(data.type === 'Escalier') obj = this.createBlock('stairs');
+                    else if(data.userData?.type === 'Exterieur') obj = this.createExterior(data.userData.element || 'pelouse', data.userData.floor || 0);
                     if(obj) {
                         obj.position.fromArray(data.position); obj.rotation.fromArray(data.rotation); obj.scale.fromArray(data.scale); obj.userData = data.userData;
+                        obj.position.y = this.getFloorY(obj.userData.floor || 0);
                         this.ensureLabelDefaults(obj);
                         if(obj.userData.labelText) this.addLabel(obj, obj.userData.labelText);
                         if(obj.userData.type === 'Chambre') this.setRoomWallColor(obj, obj.userData.wallColor || '#6366f1');
@@ -1713,6 +1919,8 @@
                 document.getElementById('floorBadge').innerText = this.floors.current === 0 ? "RDC" : "ÉTAGE " + this.floors.current;
                 document.getElementById('floorDown').disabled = this.floors.current === 0;
                 document.getElementById('floorUp').disabled = this.floors.current === this.floors.max;
+                const dupInput = document.getElementById('duplicateFloorTarget');
+                if(dupInput) dupInput.value = this.floors.current;
                 const floorBadge = document.getElementById('floorContextBadge');
                 if(floorBadge) {
                     floorBadge.innerHTML = `<i data-lucide="map-pin" size="14"></i>${this.formatFloorLabel(this.floors.current)}`;
