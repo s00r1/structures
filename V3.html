@@ -143,6 +143,9 @@
                 <div class="flex items-center gap-2">
                     <span id="modeChip" class="pill bg-sky-600/90">Mode déplacement</span>
                     <span id="selectionChip" class="pill bg-emerald-600/90">Aucune sélection</span>
+                    <button id="selectionLockBtn" class="pill bg-slate-700/80 text-white flex items-center gap-1 hover:bg-slate-800 transition" title="Verrouiller la sélection">
+                        <i data-lucide="unlock" size="14"></i><span>Sélection libre</span>
+                    </button>
                 </div>
             </div>
             <div class="mt-3 grid grid-cols-3 gap-2 text-xs text-slate-500">
@@ -991,7 +994,7 @@
                   this.scene = null; this.camera = null; this.renderer = null;
                   this.orbit = null; this.control = null; this.raycaster = new THREE.Raycaster(); this.pointer = new THREE.Vector2();
                   this.floors = { current: 0, max: 0 }; this.roomCounter = 1;
-                  this.selectedObject = null; this.isGlobalView = false; this.colorTarget = 'block'; this.labelsVisible = true;
+                  this.selectedObject = null; this.selectionLocked = false; this.isGlobalView = false; this.colorTarget = 'block'; this.labelsVisible = true;
                   this.cablesVisible = true; this.cableMaterials = [];
                   this.breakerCableGroup = null;
                   this.furnitureChoices = [
@@ -1119,6 +1122,7 @@
                 document.getElementById('propName').addEventListener('keypress', (e) => { if(e.key === 'Enter') this.updateObjectName() });
                 document.getElementById('targetBlock').onclick = (e) => this.setColorTarget('block', e.target);
                 document.getElementById('targetLabel').onclick = (e) => this.setColorTarget('label', e.target);
+                document.getElementById('selectionLockBtn').onclick = () => this.toggleSelectionLock();
                 document.getElementById('saveBtn').onclick = () => this.saveToFile();
                 document.getElementById('loadBtn').onclick = () => document.getElementById('fileInput').click();
                 document.getElementById('fileInput').onchange = (e) => this.loadFile(e);
@@ -1143,12 +1147,13 @@
                   document.getElementById('breakerRoomsList').addEventListener('change', (e) => {
                       if(e.target?.dataset?.roomId) this.setBreakerFeed(this.selectedObject, e.target.dataset.roomId, e.target.checked);
                   });
-                  ['X','Y','Z'].forEach(axis => {
-                      document.getElementById('furnScale'+axis).onchange = (e) => this.updateFurnitureScale(axis.toLowerCase(), parseFloat(e.target.value));
-                  });
+                ['X','Y','Z'].forEach(axis => {
+                    document.getElementById('furnScale'+axis).onchange = (e) => this.updateFurnitureScale(axis.toLowerCase(), parseFloat(e.target.value));
+                });
                   document.getElementById('furnRotationY').onchange = (e) => this.updateFurnitureRotation(parseFloat(e.target.value));
                 this.setColorTarget('block');
                 this.updateSelectionChips();
+                this.updateSelectionLockUI();
             }
             
             initColorPalette() {
@@ -1846,10 +1851,12 @@
                     }
                 }
 
+                if(this.selectionLocked && target !== this.selectedObject) return;
                 this.selectObject(target);
             }
 
               selectObject(obj) {
+                  if(!obj) this.selectionLocked = false;
                   this.selectedObject = obj;
                   const panel = document.getElementById('propPanel');
                   const dupInput = document.getElementById('duplicateFloorTarget');
@@ -1891,6 +1898,7 @@
                       if(dupInput) dupInput.value = this.floors.current;
                   }
                   this.updateSelectionChips();
+                  this.updateSelectionLockUI();
               }
 
             // ... Rest (setMode, changeFloor, etc) same as before ...
@@ -2040,6 +2048,36 @@
                     floorBadge.innerHTML = `<i data-lucide="map-pin" size="14"></i>${this.formatFloorLabel(this.floors.current)}`;
                     lucide.createIcons({ root: floorBadge });
                 }
+                this.updateSelectionLockUI();
+            }
+
+            updateSelectionLockUI() {
+                const btn = document.getElementById('selectionLockBtn');
+                if(!btn) return;
+                const icon = btn.querySelector('i');
+                const label = btn.querySelector('span');
+                const locked = this.selectionLocked && !!this.selectedObject;
+
+                btn.classList.toggle('bg-emerald-600/90', locked);
+                btn.classList.toggle('bg-slate-700/80', !locked);
+                btn.title = locked ? 'Déverrouiller la sélection' : 'Verrouiller la sélection';
+
+                if(icon) icon.setAttribute('data-lucide', locked ? 'lock' : 'unlock');
+                if(label) label.textContent = locked ? 'Sélection verrouillée' : 'Sélection libre';
+
+                lucide.createIcons({ root: btn });
+            }
+
+            toggleSelectionLock() {
+                if(!this.selectedObject) {
+                    this.selectionLocked = false;
+                    this.updateSelectionLockUI();
+                    this.showToast('Sélectionnez un objet avant de verrouiller.', 'info');
+                    return;
+                }
+                this.selectionLocked = !this.selectionLocked;
+                this.updateSelectionLockUI();
+                this.showToast(this.selectionLocked ? 'Sélection verrouillée' : 'Sélection déverrouillée', 'info');
             }
 
             setRoomWallColor(room, hex) {
