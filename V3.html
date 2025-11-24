@@ -1591,7 +1591,7 @@
                 return true;
             }
 
-            refreshDoorLabels(obj) {
+            refreshDoorLabels(obj, allowFallback = true) {
                 if(!this.supportsDoorBadge(obj)) return;
                 this.ensureLabelDefaults(obj);
                 this.clearDoorBadges(obj);
@@ -1604,7 +1604,7 @@
                         if(this.attachDoorBadgeToDoor(child, text)) attached = true;
                     }
                 });
-                if(!attached) this.attachDoorBadgeToFront(obj, text);
+                if(!attached && allowFallback) this.attachDoorBadgeToFront(obj, text);
             }
 
             refreshLabelUI(obj) {
@@ -1858,10 +1858,11 @@
                 const type = document.getElementById('furnitureSelector').value;
                 const group = target.getObjectByName('Furniture');
                 if(!group) { this.showToast('Aucun mobilier', 'error'); return; }
+                const isDoorType = ['door', 'frenchDoor', 'wcDoor'].includes(type);
                 for(let i = group.children.length - 1; i >=0; i--) {
                     if(group.children[i].userData.type === type) {
                           group.remove(group.children[i]);
-                          this.refreshDoorLabels(target);
+                          this.refreshDoorLabels(target, !isDoorType);
                           this.selectObject(target);
                           this.stateManager.snapshot();
                           this.updateBreakerCables();
@@ -2618,7 +2619,7 @@
                 if(this.selectedObject.userData.isFurniture) this.selectedObject.parent.remove(this.selectedObject);
                 else this.scene.remove(this.selectedObject);
 
-                if(isDoorFurniture && parentRoom) this.refreshDoorLabels(parentRoom);
+                if(isDoorFurniture && parentRoom) this.refreshDoorLabels(parentRoom, false);
                 this.selectObject(null); this.updateBreakerCables(); this.stateManager.snapshot(); this.updateStats(); this.showToast('Supprimé', 'info');
             }
 
