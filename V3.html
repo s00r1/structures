@@ -437,6 +437,16 @@
                 </div>
             </div>
 
+            <!-- Opacity Control -->
+            <div id="opacitySection" class="mb-4">
+                <div class="flex items-center justify-between mb-1">
+                    <span class="block text-[10px] font-bold text-gray-500">TRANSPARENCE</span>
+                    <span id="opacityValue" class="text-[10px] text-gray-500 font-semibold">100%</span>
+                </div>
+                <input id="opacityInput" type="range" min="0.05" max="1" step="0.05" value="1" class="w-full accent-blue-500">
+                <div class="text-[10px] text-slate-500 mt-1">Ajuste la visibilité de l'objet ou structure sélectionné(e).</div>
+            </div>
+
             <!-- Presets Size -->
             <div id="sizeSection" class="mb-2">
                  <label class="block text-[10px] font-bold text-gray-500 mb-1">TAILLE RAPIDE</label>
@@ -1140,6 +1150,8 @@
                 document.getElementById('redoBtn').onclick = () => this.stateManager.redo();
                 document.getElementById('rotateClockwise').onclick = () => this.applyPresetRotation('cw');
                 document.getElementById('rotateCounter').onclick = () => this.applyPresetRotation('ccw');
+                document.getElementById('opacityInput').addEventListener('input', (e) => this.updateSelectionOpacity(parseFloat(e.target.value), false));
+                document.getElementById('opacityInput').addEventListener('change', (e) => this.updateSelectionOpacity(parseFloat(e.target.value), true));
                 document.getElementById('labelSizeInput').oninput = (e) => this.updateLabelScale(parseFloat(e.target.value));
                 document.getElementById('labelTextColorInput').oninput = (e) => this.updateLabelTextColor(e.target.value);
                 ['X','Y','Z'].forEach(axis => {
@@ -1262,7 +1274,8 @@
                           labelVisible: true,
                           doorLabelVisible: true,
                           roomId: this.makeRoomId(),
-                          wallColor: '#6366f1'
+                          wallColor: '#6366f1',
+                          opacity: 1
                       };
                     this.roomCounter++;
                 }
@@ -1279,7 +1292,8 @@
                         labelScale: CONFIG.defaultLabelScale,
                         labelOffset: {...CONFIG.defaultLabelOffset},
                         labelVisible: true,
-                        doorLabelVisible: true
+                        doorLabelVisible: true,
+                        opacity: 1
                     };
                 } else if (type === 'generic') {
                     const geo = new THREE.BoxGeometry(4, CONFIG.floorHeight, 4);
@@ -1294,7 +1308,8 @@
                         labelScale: CONFIG.defaultLabelScale,
                         labelOffset: {...CONFIG.defaultLabelOffset},
                         labelVisible: true,
-                        doorLabelVisible: true
+                        doorLabelVisible: true,
+                        opacity: 1
                     };
                 } else if (type === 'stairs') {
                     mesh = new THREE.Group();
@@ -1305,7 +1320,7 @@
                     }
                     const hit = new THREE.Mesh(new THREE.BoxGeometry(2, CONFIG.floorHeight, 4), new THREE.MeshBasicMaterial({visible:false}));
                     hit.position.y = CONFIG.floorHeight/2; mesh.add(hit);
-                    mesh.userData = { type: 'Escalier', name: 'Escalier' };
+                    mesh.userData = { type: 'Escalier', name: 'Escalier', opacity: 1 };
                 }
 
                 if (mesh) {
@@ -1314,8 +1329,9 @@
                     mesh.userData.floor = targetFloor;
                     mesh.userData.labelColor = CONFIG.defaultLabelColor;
                     mesh.userData.textColor = CONFIG.defaultTextColor;
-                    
+
                     mesh.traverse(c => { if(c.isMesh && c.visible) { c.castShadow=true; c.receiveShadow=true; } });
+                    this.applyStoredOpacityToObject(mesh);
                     if (mesh.userData.labelText) this.addLabel(mesh, mesh.userData.labelText);
                     else this.refreshDoorLabels(mesh);
                     if (mesh.userData.type === 'Chambre') this.setRoomWallColor(mesh, mesh.userData.wallColor || '#6366f1');
@@ -1342,6 +1358,8 @@
                 element.userData.labelOffset = {...CONFIG.defaultLabelOffset};
                 element.userData.labelVisible = false;
                 element.userData.isExterior = true;
+                element.userData.opacity = element.userData.opacity ?? 1;
+                this.applyStoredOpacityToObject(element);
                 this.scene.add(element);
                 if(targetFloor > this.floors.max) { this.floors.max = targetFloor; this.updateUI(); }
                 this.updateFloorVisibility();
@@ -1694,6 +1712,7 @@
                 }
                 const item = factory();
                 item.position.set(0, item.userData.defaultY || 0, 0);
+                this.applyStoredOpacityToObject(item);
                   container.add(item);
                   this.snapObject(item);
                   this.refreshDoorLabels(target);
@@ -1927,6 +1946,7 @@
                       panel.classList.add('opacity-100', 'scale-100');
                     document.getElementById('propName').value = obj.userData.name || '';
                     if(!obj.userData.isFurniture) this.setColorTarget(this.colorTarget);
+                    this.refreshOpacityUI(obj);
 
                     this.control.showX = this.control.showY = this.control.showZ = true;
                     if(obj.userData.isFurniture) {
@@ -1949,13 +1969,14 @@
                           this.refreshBreakerUI(null);
                       }
                       if(dupInput) dupInput.value = obj.userData.floor ?? this.floors.current;
-                  } else {
-                      this.control.detach();
-                      panel.classList.add('opacity-50', 'pointer-events-none', 'scale-95');
-                      document.getElementById('furnitureTransformSection').classList.add('hidden');
-                      this.refreshBreakerUI(null);
-                      if(dupInput) dupInput.value = this.floors.current;
-                  }
+                      } else {
+                          this.control.detach();
+                          panel.classList.add('opacity-50', 'pointer-events-none', 'scale-95');
+                          document.getElementById('furnitureTransformSection').classList.add('hidden');
+                          this.refreshBreakerUI(null);
+                          this.refreshOpacityUI(null);
+                          if(dupInput) dupInput.value = this.floors.current;
+                      }
                   this.updateSelectionChips();
                   this.updateSelectionLockUI();
               }
@@ -2069,6 +2090,57 @@
                     }
                     if(child.name === 'Label') child.visible = val > 0.5 && this.labelsVisible && child.parent?.userData.labelVisible !== false;
                 });
+            }
+
+            computeObjectOpacity(obj) {
+                const values = [];
+                obj?.traverse(child => {
+                    if(!child.isMesh) return;
+                    const mats = Array.isArray(child.material) ? child.material : [child.material];
+                    mats.forEach(mat => {
+                        if(!mat) return;
+                        const base = mat.userData?.baseOpacity ?? mat.opacity ?? 1;
+                        values.push(base);
+                    });
+                });
+                if(values.length === 0) return 1;
+                const avg = values.reduce((a,b) => a + b, 0) / values.length;
+                return THREE.MathUtils.clamp(avg, 0.05, 1);
+            }
+
+            applyStoredOpacityToObject(obj) {
+                if(!obj) return;
+                if(obj.userData.opacity === undefined) obj.userData.opacity = this.computeObjectOpacity(obj);
+                obj.traverse(child => {
+                    if(!child.isMesh) return;
+                    const mats = Array.isArray(child.material) ? child.material : [child.material];
+                    mats.forEach(mat => {
+                        if(!mat) return;
+                        if(!mat.userData) mat.userData = {};
+                        if(mat.userData.baseTransparent === undefined) mat.userData.baseTransparent = mat.transparent ?? false;
+                        mat.userData.baseOpacity = obj.userData.opacity;
+                        mat.transparent = mat.userData.baseTransparent || obj.userData.opacity < 1;
+                        mat.opacity = obj.userData.opacity;
+                    });
+                });
+            }
+
+            refreshOpacityUI(obj) {
+                const slider = document.getElementById('opacityInput');
+                const label = document.getElementById('opacityValue');
+                const value = obj ? (obj.userData.opacity ?? this.computeObjectOpacity(obj)) : 1;
+                if(slider) slider.value = value;
+                if(label) label.textContent = `${Math.round(value * 100)}%`;
+            }
+
+            updateSelectionOpacity(val, snapshot = true) {
+                if(!this.selectedObject || isNaN(val)) return;
+                const clamped = THREE.MathUtils.clamp(val, 0.05, 1);
+                this.selectedObject.userData.opacity = clamped;
+                this.applyStoredOpacityToObject(this.selectedObject);
+                this.setOpacity(this.selectedObject, 1);
+                this.refreshOpacityUI(this.selectedObject);
+                if(snapshot) this.stateManager.snapshot();
             }
 
             setGlobalView(isGlobal) {
@@ -2242,6 +2314,8 @@
                 if(this.selectedObject.userData.isFurniture) {
                     const clone = this.selectedObject.clone();
                     clone.position.x += 0.5; clone.position.z += 0.5;
+                    clone.userData.opacity = this.selectedObject.userData.opacity ?? this.computeObjectOpacity(this.selectedObject);
+                    this.applyStoredOpacityToObject(clone);
                     this.restoreMaterialOpacity(clone);
                     this.setOpacity(clone, 1);
                     this.selectedObject.parent.add(clone); this.selectObject(clone);
@@ -2276,6 +2350,7 @@
                         if(clone.userData.type === 'Chambre') this.ensureRoomId(clone, true);
                         this.ensureLabelDefaults(clone);
                         if(clone.userData.type === 'Chambre') this.setRoomWallColor(clone, clone.userData.wallColor || '#6366f1');
+                        this.applyStoredOpacityToObject(clone);
                         if(!isNaN(parseInt(clone.userData.labelText))) {
                           const newNum = this.roomCounter++; clone.userData.labelText = newNum.toString(); clone.userData.name = `Chambre ${newNum}`;
                               this.addLabel(clone, clone.userData.labelText);
@@ -2336,6 +2411,7 @@
                           this.ensureLabelDefaults(obj);
                           if(obj.userData.labelText) this.addLabel(obj, obj.userData.labelText);
                           if(obj.userData.type === 'Chambre') this.setRoomWallColor(obj, obj.userData.wallColor || '#6366f1');
+                        this.applyStoredOpacityToObject(obj);
                         this.refreshDoorLabels(obj);
                         if(obj.userData.labelColor) this.selectedObject = obj;
                     }
