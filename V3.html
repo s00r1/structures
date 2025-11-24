@@ -2050,6 +2050,15 @@
                 });
             }
 
+            getOpacityTargets(obj) {
+                if(!obj) return [];
+                if(obj.userData?.type === 'Chambre') {
+                    const shell = obj.getObjectByName('RoomShell');
+                    return shell ? [shell] : [obj];
+                }
+                return [obj];
+            }
+
             restoreMaterialOpacity(obj) {
                 if(!obj) return;
                 obj.traverse(child => {
@@ -2094,13 +2103,15 @@
 
             computeObjectOpacity(obj) {
                 const values = [];
-                obj?.traverse(child => {
-                    if(!child.isMesh) return;
-                    const mats = Array.isArray(child.material) ? child.material : [child.material];
-                    mats.forEach(mat => {
-                        if(!mat) return;
-                        const base = mat.userData?.baseOpacity ?? mat.opacity ?? 1;
-                        values.push(base);
+                this.getOpacityTargets(obj).forEach(target => {
+                    target?.traverse(child => {
+                        if(!child.isMesh) return;
+                        const mats = Array.isArray(child.material) ? child.material : [child.material];
+                        mats.forEach(mat => {
+                            if(!mat) return;
+                            const base = mat.userData?.baseOpacity ?? mat.opacity ?? 1;
+                            values.push(base);
+                        });
                     });
                 });
                 if(values.length === 0) return 1;
@@ -2111,16 +2122,18 @@
             applyStoredOpacityToObject(obj) {
                 if(!obj) return;
                 if(obj.userData.opacity === undefined) obj.userData.opacity = this.computeObjectOpacity(obj);
-                obj.traverse(child => {
-                    if(!child.isMesh) return;
-                    const mats = Array.isArray(child.material) ? child.material : [child.material];
-                    mats.forEach(mat => {
-                        if(!mat) return;
-                        if(!mat.userData) mat.userData = {};
-                        if(mat.userData.baseTransparent === undefined) mat.userData.baseTransparent = mat.transparent ?? false;
-                        mat.userData.baseOpacity = obj.userData.opacity;
-                        mat.transparent = mat.userData.baseTransparent || obj.userData.opacity < 1;
-                        mat.opacity = obj.userData.opacity;
+                this.getOpacityTargets(obj).forEach(target => {
+                    target?.traverse(child => {
+                        if(!child.isMesh) return;
+                        const mats = Array.isArray(child.material) ? child.material : [child.material];
+                        mats.forEach(mat => {
+                            if(!mat) return;
+                            if(!mat.userData) mat.userData = {};
+                            if(mat.userData.baseTransparent === undefined) mat.userData.baseTransparent = mat.transparent ?? false;
+                            mat.userData.baseOpacity = obj.userData.opacity;
+                            mat.transparent = mat.userData.baseTransparent || obj.userData.opacity < 1;
+                            mat.opacity = obj.userData.opacity;
+                        });
                     });
                 });
             }
