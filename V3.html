@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Architecte Hôtel Pro - Flexilogis 3D</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
+
+        body { margin: 0; overflow: hidden; font-family: 'Inter', sans-serif; background-color: #0f172a; user-select: none; }
+        
+        /* Canvas Container */
+        #canvas-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; background: linear-gradient(to bottom, #e0f2fe, #f0f9ff); }
+
+        /* UI Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.05); }
+        ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.4); }
+
+        /* Custom UI Components */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-tool { transition: all 0.2s ease; }
+        .btn-tool:active { transform: scale(0.95); }
+        .btn-tool.active { background-color: #3b82f6; color: white; border-color: #2563eb; }
+
+        .color-swatch { transition: transform 0.2s; cursor: pointer; border: 2px solid transparent; }
+        .color-swatch:hover { transform: scale(1.1); }
+        .color-swatch.active { border-color: #3b82f6; box-shadow: 0 0 0 2px white, 0 0 0 4px #3b82f6; transform: scale(1.1); }
+
+        /* Toast Notification */
+        #toast-container {
+            position: fixed; bottom: 20px; right: 20px; z-index: 100;
+            display: flex; flex-direction: column; gap: 10px; pointer-events: none;
+        }
+        .toast {
+            background: #1e293b; color: white; padding: 12px 24px; border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2); font-size: 0.9rem;
+            animation: slideIn 0.3s ease-out forwards; pointer-events: auto;
+            display: flex; align-items: center; gap: 8px; border-left: 4px solid #3b82f6;
+        }
+        .toast.success { border-left-color: #22c55e; }
+        .toast.error { border-left-color: #ef4444; }
+        .toast.info { border-left-color: #3b82f6; }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes fadeOut {
+            to { opacity: 0; transform: translateY(10px); }
+        }
+
+        /* Loader */
+        #loader {
+            position: fixed; inset: 0; background: #0f172a; z-index: 9999;
+            display: flex; justify-content: center; align-items: center; flex-direction: column;
+            transition: opacity 0.5s;
+        }
+        .spinner {
+            width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.1);
+            border-left-color: #3b82f6; border-radius: 50%; animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <!-- Loader -->
+    <div id="loader">
+        <div class="spinner mb-4"></div>
+        <div class="text-white font-semibold tracking-wider">CHARGEMENT FLEXILOGIS...</div>
+    </div>
+
+    <!-- 3D Container -->
+    <div id="canvas-container"></div>
+    <input type="file" id="fileInput" accept=".json" style="display: none;">
+
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <!-- LEFT PANEL: Creation & Tools -->
+    <div class="absolute top-4 left-4 w-72 flex flex-col gap-3 z-10 max-h-[95vh]">
+        
+        <!-- Header -->
+        <div class="glass-panel p-4 rounded-xl flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <div class="bg-blue-600 p-1.5 rounded-lg text-white"><i data-lucide="building-2" size="20"></i></div>
+                <div>
+                    <h1 class="font-bold text-gray-800 text-sm leading-tight">Flexilogis Studio</h1>
+                    <div class="text-[10px] text-gray-500 font-mono">PROD V2.5 FIX</div>
+                </div>
+            </div>
+            <!-- Undo/Redo Mini -->
+            <div class="flex gap-1">
+                <button id="undoBtn" class="p-1.5 hover:bg-gray-100 rounded text-gray-600 disabled:opacity-30" title="Annuler (Ctrl+Z)">
+                    <i data-lucide="undo-2" size="16"></i>
+                </button>
+                <button id="redoBtn" class="p-1.5 hover:bg-gray-100 rounded text-gray-600 disabled:opacity-30" title="Rétablir (Ctrl+Y)">
+                    <i data-lucide="redo-2" size="16"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Floor Management -->
+        <div class="glass-panel p-3 rounded-xl">
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-xs font-bold text-gray-500 uppercase">Niveau Actif</span>
+                <span id="floorBadge" class="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded font-bold border border-blue-200">RDC</span>
+            </div>
+            
+            <div class="flex items-center gap-2 mb-2">
+                <button id="floorDown" class="w-8 h-8 flex items-center justify-center bg-white border border-gray-200 rounded hover:bg-gray-50 text-gray-600 transition">
+                    <i data-lucide="chevron-down" size="18"></i>
+                </button>
+                <div class="flex-1 h-8 bg-white border border-gray-200 rounded flex items-center justify-center font-bold text-gray-700 shadow-inner">
+                    <span id="floorNumberDisplay">0</span>
+                </div>
+                <button id="floorUp" class="w-8 h-8 flex items-center justify-center bg-white border border-gray-200 rounded hover:bg-gray-50 text-gray-600 transition">
+                    <i data-lucide="chevron-up" size="18"></i>
+                </button>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+                <button id="addFloorBtn" class="py-1.5 bg-blue-600 text-white text-xs font-bold rounded hover:bg-blue-700 transition flex items-center justify-center gap-1">
+                    <i data-lucide="plus" size="12"></i> Ajouter
+                </button>
+                <button id="cloneFloorBtn" class="py-1.5 bg-indigo-100 text-indigo-700 text-xs font-bold rounded hover:bg-indigo-200 transition border border-indigo-200 flex items-center justify-center gap-1">
+                    <i data-lucide="copy" size="12"></i> Dupliquer
+                </button>
+            </div>
+        </div>
+
+        <!-- Library -->
+        <div class="glass-panel p-3 rounded-xl flex-1 overflow-y-auto">
+            <span class="text-xs font-bold text-gray-400 uppercase block mb-2">Bibliothèque</span>
+            <div class="space-y-2">
+                <button onclick="app.createBlock('room')" class="w-full flex items-center gap-3 p-2 bg-white hover:bg-blue-50 border border-gray-200 hover:border-blue-300 rounded-lg transition group text-left">
+                    <div class="w-8 h-8 rounded bg-indigo-100 text-indigo-600 flex items-center justify-center"><i data-lucide="bed-double" size="16"></i></div>
+                    <div class="flex-1">
+                        <div class="text-xs font-bold text-gray-700 group-hover:text-blue-700">Chambre Complète</div>
+                        <div class="text-[10px] text-gray-400">Avec Fenêtre & Porte</div>
+                    </div>
+                </button>
+                
+                <button onclick="app.createBlock('corridor')" class="w-full flex items-center gap-3 p-2 bg-white hover:bg-teal-50 border border-gray-200 hover:border-teal-300 rounded-lg transition group text-left">
+                    <div class="w-8 h-8 rounded bg-teal-100 text-teal-600 flex items-center justify-center"><i data-lucide="arrow-up-down" size="16"></i></div>
+                    <div class="flex-1">
+                        <div class="text-xs font-bold text-gray-700 group-hover:text-teal-700">Couloir</div>
+                        <div class="text-[10px] text-gray-400">Liaison</div>
+                    </div>
+                </button>
+
+                <button onclick="app.createBlock('stairs')" class="w-full flex items-center gap-3 p-2 bg-white hover:bg-orange-50 border border-gray-200 hover:border-orange-300 rounded-lg transition group text-left">
+                    <div class="w-8 h-8 rounded bg-orange-100 text-orange-600 flex items-center justify-center"><i data-lucide="move-up-right" size="16"></i></div>
+                    <div class="flex-1">
+                        <div class="text-xs font-bold text-gray-700 group-hover:text-orange-700">Escalier</div>
+                        <div class="text-[10px] text-gray-400">Vertical</div>
+                    </div>
+                </button>
+
+                <button onclick="app.createBlock('generic')" class="w-full flex items-center gap-3 p-2 bg-white hover:bg-gray-50 border border-gray-200 hover:border-gray-300 rounded-lg transition group text-left">
+                    <div class="w-8 h-8 rounded bg-slate-100 text-slate-600 flex items-center justify-center"><i data-lucide="box" size="16"></i></div>
+                    <div class="flex-1">
+                        <div class="text-xs font-bold text-gray-700 group-hover:text-slate-700">Zone Libre</div>
+                        <div class="text-[10px] text-gray-400">Custom</div>
+                    </div>
+                </button>
+            </div>
+        </div>
+
+        <!-- Statistics -->
+        <div class="glass-panel p-3 rounded-xl">
+            <span class="text-xs font-bold text-gray-400 uppercase block mb-2">Statistiques Projet</span>
+            <div class="grid grid-cols-2 gap-2 text-center">
+                <div class="bg-white/50 rounded p-1 border border-gray-100">
+                    <div id="statRooms" class="text-sm font-bold text-gray-800">0</div>
+                    <div class="text-[10px] text-gray-500">Chambres</div>
+                </div>
+                <div class="bg-white/50 rounded p-1 border border-gray-100">
+                    <div id="statArea" class="text-sm font-bold text-gray-800">0 m²</div>
+                    <div class="text-[10px] text-gray-500">Surface</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT PANEL: Properties & Settings -->
+    <div class="absolute top-4 right-4 w-72 flex flex-col gap-3 z-10 max-h-[95vh]">
+        
+        <!-- View Settings -->
+        <div class="glass-panel p-2 rounded-xl flex gap-1">
+            <button id="viewFloor" class="flex-1 py-2 text-xs font-bold rounded-lg transition flex items-center justify-center gap-2 btn-tool active">
+                <i data-lucide="layers" size="14"></i> Étage
+            </button>
+            <button id="viewGlobal" class="flex-1 py-2 text-xs font-bold rounded-lg transition flex items-center justify-center gap-2 btn-tool bg-white/50 hover:bg-white">
+                <i data-lucide="box-select" size="14"></i> Global
+            </button>
+        </div>
+
+        <!-- Tools Mode -->
+        <div class="glass-panel p-2 rounded-xl">
+            <div class="flex gap-1 bg-gray-100/50 p-1 rounded-lg">
+                <button id="toolTranslate" class="flex-1 py-1.5 rounded text-gray-600 hover:bg-white shadow-sm transition flex justify-center" title="Déplacer (W)">
+                    <i data-lucide="move" size="16"></i>
+                </button>
+                <button id="toolRotate" class="flex-1 py-1.5 rounded text-gray-600 hover:bg-white shadow-sm transition flex justify-center" title="Pivoter (E)">
+                    <i data-lucide="rotate-cw" size="16"></i>
+                </button>
+                <button id="toolScale" class="flex-1 py-1.5 rounded text-gray-600 hover:bg-white shadow-sm transition flex justify-center" title="Redimensionner (R)">
+                    <i data-lucide="maximize" size="16"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Selection Properties (Conditional) -->
+        <div id="propPanel" class="glass-panel p-4 rounded-xl transition-all duration-300 opacity-50 pointer-events-none scale-95 origin-top">
+            <div class="flex justify-between items-start mb-3">
+                <h2 id="propTitle" class="text-xs font-bold text-blue-600 uppercase tracking-wide">Propriétés</h2>
+                <button id="deleteBtn" class="text-red-400 hover:text-red-600 transition" title="Supprimer"><i data-lucide="trash-2" size="16"></i></button>
+            </div>
+
+            <!-- Name Input -->
+            <div class="mb-4">
+                <label class="block text-[10px] font-bold text-gray-500 mb-1">IDENTIFIANT / NOM</label>
+                <div class="flex gap-1">
+                    <input type="text" id="propName" class="flex-1 bg-white border border-gray-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition">
+                    <button id="propNameBtn" class="px-2 bg-blue-50 text-blue-600 rounded border border-blue-100 hover:bg-blue-100"><i data-lucide="check" size="14"></i></button>
+                </div>
+            </div>
+
+            <!-- Color Picker (Hidden for furniture if needed) -->
+            <div id="colorSection" class="mb-4">
+                <div class="flex text-[10px] font-bold text-gray-500 mb-2 gap-2 bg-gray-50 p-1 rounded">
+                    <button id="targetBlock" class="flex-1 py-1 rounded text-center transition bg-white shadow-sm text-gray-800">Murs</button>
+                    <button id="targetLabel" class="flex-1 py-1 rounded text-center transition hover:bg-white text-gray-400">Étiquette</button>
+                </div>
+                <div id="colorGrid" class="grid grid-cols-6 gap-2">
+                    <!-- Generated via JS -->
+                </div>
+            </div>
+
+            <!-- Presets Size -->
+            <div id="sizeSection" class="mb-2">
+                 <label class="block text-[10px] font-bold text-gray-500 mb-1">TAILLE RAPIDE</label>
+                 <div class="flex gap-1">
+                     <button onclick="app.resizeSelection('S')" class="flex-1 py-1 bg-white border border-gray-200 rounded text-xs font-bold text-gray-600 hover:bg-gray-50">S</button>
+                     <button onclick="app.resizeSelection('M')" class="flex-1 py-1 bg-white border border-gray-200 rounded text-xs font-bold text-gray-600 hover:bg-gray-50">M</button>
+                     <button onclick="app.resizeSelection('L')" class="flex-1 py-1 bg-white border border-gray-200 rounded text-xs font-bold text-gray-600 hover:bg-gray-50">L</button>
+                 </div>
+            </div>
+            
+            <button id="duplicateBtn" class="w-full mt-2 py-2 bg-yellow-50 text-yellow-700 text-xs font-bold rounded border border-yellow-200 hover:bg-yellow-100 flex items-center justify-center gap-2">
+                <i data-lucide="copy" size="14"></i> Dupliquer Objet
+            </button>
+        </div>
+
+        <!-- Footer Actions -->
+        <div class="glass-panel p-3 rounded-xl mt-auto">
+             <div class="grid grid-cols-2 gap-2">
+                 <button id="saveBtn" class="py-2 bg-green-600 text-white text-xs font-bold rounded hover:bg-green-700 shadow-lg shadow-green-900/20 transition flex items-center justify-center gap-1">
+                     <i data-lucide="save" size="14"></i> Sauver
+                 </button>
+                 <button id="loadBtn" class="py-2 bg-gray-600 text-white text-xs font-bold rounded hover:bg-gray-700 shadow-lg shadow-gray-900/20 transition flex items-center justify-center gap-1">
+                     <i data-lucide="folder-open" size="14"></i> Ouvrir
+                 </button>
+             </div>
+             <button id="resetBtn" class="w-full mt-2 text-[10px] text-gray-400 hover:text-red-500 underline decoration-dotted text-center">Réinitialiser la scène</button>
+        </div>
+    </div>
+
+    <!-- Three.js Import Map -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <!-- APP LOGIC -->
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { TransformControls } from 'three/addons/controls/TransformControls.js';
+
+        // --- CONFIGURATION ---
+        const CONFIG = {
+            gridSize: 0.5, 
+            floorHeight: 3.5,
+            colors: [
+                '#6366f1', '#3b82f6', '#0ea5e9', '#14b8a6', 
+                '#22c55e', '#84cc16', '#eab308', '#f97316', 
+                '#ef4444', '#a855f7', '#d946ef', '#ec4899', 
+                '#64748b', '#94a3b8', '#cbd5e1', '#f1f5f9', 
+                '#ffffff', '#0f172a'
+            ],
+            defaultLabelColor: '#1e293b',
+            defaultTextColor: '#ffffff',
+            roomWidth: 4,
+            roomDepth: 6
+        };
+
+        // --- FACTORY A MEUBLES ---
+        const FurnitureFactory = {
+            bed: () => {
+                const group = new THREE.Group();
+                const bedGeo = new THREE.BoxGeometry(1.6, 0.5, 2);
+                const bedMat = new THREE.MeshStandardMaterial({ color: '#ffffff' });
+                const bed = new THREE.Mesh(bedGeo, bedMat);
+                bed.position.y = 0.25;
+                bed.castShadow = true; bed.receiveShadow = true;
+                
+                const pillowGeo = new THREE.BoxGeometry(0.6, 0.15, 0.4);
+                const pMat = new THREE.MeshStandardMaterial({color: '#cbd5e1'});
+                const p1 = new THREE.Mesh(pillowGeo, pMat); p1.position.set(-0.4, 0.6, -0.7);
+                const p2 = new THREE.Mesh(pillowGeo, pMat); p2.position.set(0.4, 0.6, -0.7);
+                
+                group.add(bed, p1, p2);
+                group.userData = { isFurniture: true, type: 'bed', name: 'Lit', dims: {x:1.6, z:2}, defaultY: 0 };
+                return group;
+            },
+            shower: () => {
+                const group = new THREE.Group();
+                const base = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.1, 1.2), new THREE.MeshStandardMaterial({color: '#ffffff'}));
+                base.position.y = 0.05;
+                const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.1, 2.2, 1.1), new THREE.MeshStandardMaterial({color: '#0ea5e9', transparent: true, opacity: 0.3}));
+                cabin.position.y = 1.15;
+                group.add(base, cabin);
+                group.userData = { isFurniture: true, type: 'shower', name: 'Douche', dims: {x:1.2, z:1.2}, defaultY: 0 };
+                return group;
+            },
+            wardrobe: () => {
+                const mesh = new THREE.Mesh(new THREE.BoxGeometry(0.8, 2.4, 0.6), new THREE.MeshStandardMaterial({ color: '#854d0e' }));
+                mesh.position.y = 1.2;
+                mesh.castShadow = true;
+                mesh.userData = { isFurniture: true, type: 'wardrobe', name: 'Armoire', dims: {x:0.8, z:0.6}, defaultY: 1.2 };
+                return mesh;
+            },
+            desk: () => {
+                const group = new THREE.Group();
+                const top = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.1, 1.5), new THREE.MeshStandardMaterial({color: '#475569'}));
+                top.position.y = 0.8;
+                group.add(top);
+                group.userData = { isFurniture: true, type: 'desk', name: 'Bureau', dims: {x:0.6, z:1.5}, defaultY: 0 };
+                return group;
+            },
+            chair: () => {
+                const group = new THREE.Group();
+                const seat = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.1, 0.4), new THREE.MeshStandardMaterial({color: '#ef4444'}));
+                seat.position.y = 0.5;
+                const back = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.5, 0.4), new THREE.MeshStandardMaterial({color: '#ef4444'}));
+                back.position.set(0.15, 0.75, 0);
+                group.add(seat, back);
+                group.userData = { isFurniture: true, type: 'chair', name: 'Chaise', dims: {x:0.4, z:0.4}, defaultY: 0 };
+                return group;
+            },
+            tv: () => {
+                const mesh = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.8, 1.2), new THREE.MeshStandardMaterial({color: '#000000', metalness: 0.8}));
+                mesh.position.y = 1.5;
+                mesh.userData = { isFurniture: true, type: 'tv', name: 'TV', dims: {x:0.1, z:1.2}, defaultY: 1.5 };
+                return mesh;
+            },
+            door: () => {
+                const group = new THREE.Group();
+                const h = CONFIG.floorHeight;
+                // Cadre
+                const doorFrame = new THREE.Mesh(new THREE.BoxGeometry(1.2, h, 0.3), new THREE.MeshStandardMaterial({color: '#475569'}));
+                doorFrame.position.y = h/2;
+                // Porte
+                const door = new THREE.Mesh(new THREE.BoxGeometry(1.0, h*0.85, 0.35), new THREE.MeshStandardMaterial({color: '#854d0e'}));
+                door.position.set(0, h/2, 0); 
+                
+                group.add(doorFrame, door);
+                group.userData = { isFurniture: true, type: 'door', name: 'Porte', isWallMounted: true, defaultY: 0 };
+                return group;
+            },
+            window: () => {
+                const group = new THREE.Group();
+                const h = CONFIG.floorHeight;
+                // Cadre
+                const frame = new THREE.Mesh(new THREE.BoxGeometry(1.8, 1.4, 0.3), new THREE.MeshStandardMaterial({color: '#475569'}));
+                // Vitre
+                const glass = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.2, 0.32), new THREE.MeshStandardMaterial({color: '#bae6fd', transparent: true, opacity: 0.5}));
+                
+                group.add(frame, glass);
+                // Y par défaut à 1.5m du sol (centre de la fenêtre)
+                group.userData = { isFurniture: true, type: 'window', name: 'Fenêtre', isWallMounted: true, defaultY: 1.5 };
+                return group;
+            }
+        };
+
+        // --- STATE MANAGEMENT ---
+        class StateManager {
+            constructor(app) {
+                this.app = app;
+                this.history = [];
+                this.redoStack = [];
+                this.maxHistory = 30;
+                this.isLocked = false;
+            }
+            snapshot() {
+                if (this.isLocked) return;
+                const state = this.app.serializeScene();
+                if (this.history.length > 0 && JSON.stringify(this.history[this.history.length - 1]) === JSON.stringify(state)) return;
+                this.history.push(state);
+                if (this.history.length > this.maxHistory) this.history.shift();
+                this.redoStack = []; 
+                this.updateUI();
+            }
+            undo() {
+                if (this.history.length === 0) return;
+                const current = this.app.serializeScene();
+                this.redoStack.push(current);
+                const previous = this.history.pop();
+                this.isLocked = true; this.app.loadScene(previous); this.isLocked = false;
+                this.app.showToast('Annulé', 'info'); this.updateUI();
+            }
+            redo() {
+                if (this.redoStack.length === 0) return;
+                const next = this.redoStack.pop();
+                this.history.push(this.app.serializeScene()); 
+                this.isLocked = true; this.app.loadScene(next); this.isLocked = false;
+                this.app.showToast('Rétabli', 'info'); this.updateUI();
+            }
+            updateUI() {
+                const undoBtn = document.getElementById('undoBtn');
+                const redoBtn = document.getElementById('redoBtn');
+                if(undoBtn) undoBtn.disabled = this.history.length === 0;
+                if(redoBtn) redoBtn.disabled = this.redoStack.length === 0;
+            }
+        }
+
+        // --- MAIN APPLICATION ---
+        class HotelArchitect {
+            constructor() {
+                this.scene = null; this.camera = null; this.renderer = null;
+                this.orbit = null; this.control = null; this.raycaster = new THREE.Raycaster(); this.pointer = new THREE.Vector2();
+                this.floors = { current: 0, max: 0 }; this.roomCounter = 1;
+                this.selectedObject = null; this.isGlobalView = false; this.colorTarget = 'block'; 
+                this.stateManager = new StateManager(this); this.gridHelper = null;
+                this.init();
+            }
+
+            init() {
+                this.scene = new THREE.Scene();
+                this.scene.background = new THREE.Color('#e0f2fe');
+                this.scene.fog = new THREE.FogExp2(0xe0f2fe, 0.008);
+                this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+                this.camera.position.set(30, 40, 40); this.camera.lookAt(0, 0, 0);
+                this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+                this.renderer.setPixelRatio(window.devicePixelRatio);
+                this.renderer.shadowMap.enabled = true; this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                document.getElementById('canvas-container').appendChild(this.renderer.domElement);
+                
+                this.scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+                const sun = new THREE.DirectionalLight(0xffffff, 1.5);
+                sun.position.set(50, 80, 30); sun.castShadow = true;
+                sun.shadow.mapSize.width = 2048; sun.shadow.mapSize.height = 2048;
+                const d = 60; sun.shadow.camera.left = -d; sun.shadow.camera.right = d; sun.shadow.camera.top = d; sun.shadow.camera.bottom = -d;
+                sun.shadow.bias = -0.0005; this.scene.add(sun);
+                
+                this.gridHelper = new THREE.GridHelper(100, 200, 0x94a3b8, 0xcbd5e1); this.scene.add(this.gridHelper);
+                const planeGeo = new THREE.PlaneGeometry(200, 200);
+                const planeMat = new THREE.ShadowMaterial({ opacity: 0.05, color: 0x000000 });
+                const ground = new THREE.Mesh(planeGeo, planeMat);
+                ground.rotation.x = -Math.PI / 2; ground.name = "Ground"; ground.receiveShadow = true; this.scene.add(ground);
+
+                this.orbit = new OrbitControls(this.camera, this.renderer.domElement);
+                this.orbit.enableDamping = true; this.orbit.dampingFactor = 0.05; this.orbit.maxPolarAngle = Math.PI / 2 - 0.05;
+
+                this.control = new TransformControls(this.camera, this.renderer.domElement);
+                this.control.addEventListener('dragging-changed', (e) => { this.orbit.enabled = !e.value; });
+                this.control.addEventListener('mouseUp', () => { this.stateManager.snapshot(); this.updateStats(); });
+                this.control.addEventListener('change', () => { if (this.control.object) this.snapObject(this.control.object); });
+                this.scene.add(this.control);
+
+                window.addEventListener('resize', () => this.onResize());
+                document.addEventListener('keydown', (e) => this.onKeyDown(e));
+                this.renderer.domElement.addEventListener('pointerdown', (e) => this.onPointerDown(e));
+                
+                this.bindUI(); this.initColorPalette();
+                this.renderer.setAnimationLoop(() => this.animate());
+                lucide.createIcons();
+                document.getElementById('loader').style.opacity = 0; setTimeout(() => document.getElementById('loader').remove(), 500);
+
+                this.createBlock('room'); 
+                this.stateManager.snapshot(); this.updateStats();
+            }
+
+            bindUI() {
+                document.getElementById('toolTranslate').onclick = () => this.setMode('translate');
+                document.getElementById('toolRotate').onclick = () => this.setMode('rotate');
+                document.getElementById('toolScale').onclick = () => this.setMode('scale');
+                document.getElementById('floorUp').onclick = () => this.changeFloor(1);
+                document.getElementById('floorDown').onclick = () => this.changeFloor(-1);
+                document.getElementById('addFloorBtn').onclick = () => this.addFloor();
+                document.getElementById('cloneFloorBtn').onclick = () => this.cloneCurrentFloor();
+                document.getElementById('viewFloor').onclick = () => this.setGlobalView(false);
+                document.getElementById('viewGlobal').onclick = () => this.setGlobalView(true);
+                document.getElementById('deleteBtn').onclick = () => this.deleteSelection();
+                document.getElementById('duplicateBtn').onclick = () => this.duplicateSelection();
+                document.getElementById('propNameBtn').onclick = () => this.updateObjectName();
+                document.getElementById('propName').addEventListener('keypress', (e) => { if(e.key === 'Enter') this.updateObjectName() });
+                document.getElementById('targetBlock').onclick = (e) => this.setColorTarget('block', e.target);
+                document.getElementById('targetLabel').onclick = (e) => this.setColorTarget('label', e.target);
+                document.getElementById('saveBtn').onclick = () => this.saveToFile();
+                document.getElementById('loadBtn').onclick = () => document.getElementById('fileInput').click();
+                document.getElementById('fileInput').onchange = (e) => this.loadFile(e);
+                document.getElementById('resetBtn').onclick = () => this.resetScene();
+                document.getElementById('undoBtn').onclick = () => this.stateManager.undo();
+                document.getElementById('redoBtn').onclick = () => this.stateManager.redo();
+            }
+            
+            initColorPalette() {
+                const container = document.getElementById('colorGrid');
+                CONFIG.colors.forEach(color => {
+                    const btn = document.createElement('div');
+                    btn.className = 'color-swatch w-6 h-6 rounded-full shadow-sm';
+                    btn.style.backgroundColor = color;
+                    btn.onclick = () => this.applyColor(color);
+                    container.appendChild(btn);
+                });
+            }
+
+            createBlock(type, furnitureList = null) {
+                let mesh;
+                const yPos = this.floors.current * CONFIG.floorHeight;
+                const randX = Math.round((Math.random() * 4 - 2)) * 1;
+                const randZ = Math.round((Math.random() * 4 - 2)) * 1;
+
+                if (type === 'room') {
+                    mesh = new THREE.Group();
+                    const w = CONFIG.roomWidth, h = CONFIG.floorHeight, d = CONFIG.roomDepth;
+
+                    // --- STRUCTURE ---
+                    const shellGroup = new THREE.Group();
+                    shellGroup.name = "RoomShell";
+                    const matWall = new THREE.MeshStandardMaterial({ color: '#6366f1', roughness: 0.4 });
+                    const matFloor = new THREE.MeshStandardMaterial({ color: '#e2e8f0', roughness: 0.8 });
+
+                    // Sol
+                    const floor = new THREE.Mesh(new THREE.BoxGeometry(w, 0.2, d), matFloor);
+                    floor.position.y = 0.1; floor.receiveShadow = true; shellGroup.add(floor);
+                    
+                    // Murs Pleins (4 Côtés)
+                    const back = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.2), matWall.clone()); back.position.set(0, h/2, -d/2+0.1); shellGroup.add(back);
+                    const front = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.2), matWall.clone()); front.position.set(0, h/2, d/2-0.1); shellGroup.add(front);
+                    const left = new THREE.Mesh(new THREE.BoxGeometry(0.2, h, d), matWall.clone()); left.position.set(-w/2+0.1, h/2, 0); shellGroup.add(left);
+                    const right = new THREE.Mesh(new THREE.BoxGeometry(0.2, h, d), matWall.clone()); right.position.set(w/2-0.1, h/2, 0); shellGroup.add(right);
+                    
+                    mesh.add(shellGroup);
+
+                    // --- MOBILIER ---
+                    const furnitureGroup = new THREE.Group();
+                    furnitureGroup.name = "Furniture";
+                    
+                    if (furnitureList) {
+                        furnitureList.forEach(item => {
+                            const fMesh = FurnitureFactory[item.type]();
+                            fMesh.position.fromArray(item.pos);
+                            fMesh.rotation.fromArray(item.rot);
+                            furnitureGroup.add(fMesh);
+                        });
+                    } else {
+                        // Layout Par défaut
+                        const bed = FurnitureFactory.bed(); bed.position.set(0, 0, -1.5); furnitureGroup.add(bed);
+                        const shower = FurnitureFactory.shower(); shower.position.set(-1.3, 0, -2.3); furnitureGroup.add(shower);
+                        const desk = FurnitureFactory.desk(); desk.position.set(1.6, 0, 0.5); furnitureGroup.add(desk);
+                        const wardrobe = FurnitureFactory.wardrobe(); wardrobe.position.set(1.5, 1.2, -2.5); furnitureGroup.add(wardrobe); // ward has defaultY
+                        const chair = FurnitureFactory.chair(); chair.position.set(1.0, 0, 0.5); furnitureGroup.add(chair);
+                        const tv = FurnitureFactory.tv(); tv.position.set(-1.8, 1.5, 0); furnitureGroup.add(tv);
+                        
+                        // Porte & Fenêtre par défaut
+                        const door = FurnitureFactory.door(); 
+                        door.position.set(-0.5, 0, d/2 - 0.1); 
+                        furnitureGroup.add(door);
+
+                        const win = FurnitureFactory.window();
+                        win.position.set(1.0, win.userData.defaultY, -d/2 + 0.1); // FIX Y
+                        furnitureGroup.add(win);
+                    }
+                    mesh.add(furnitureGroup);
+
+                    const hitBox = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshBasicMaterial({visible: false}));
+                    hitBox.position.y = h/2; hitBox.name = "StructureHitbox"; 
+                    mesh.add(hitBox);
+
+                    mesh.userData = { type: 'Chambre', name: `Chambre ${this.roomCounter}`, labelText: this.roomCounter.toString() };
+                    this.roomCounter++;
+                }
+                else if (type === 'corridor') {
+                    const geo = new THREE.BoxGeometry(10, CONFIG.floorHeight, 2);
+                    const mat = new THREE.MeshStandardMaterial({ color: '#14b8a6' });
+                    mesh = new THREE.Mesh(geo, mat);
+                    mesh.position.y = CONFIG.floorHeight / 2; 
+                    mesh.userData = { type: 'Couloir', name: 'Couloir', labelText: '' };
+                } else if (type === 'generic') {
+                    const geo = new THREE.BoxGeometry(4, CONFIG.floorHeight, 4);
+                    const mat = new THREE.MeshStandardMaterial({ color: '#64748b' });
+                    mesh = new THREE.Mesh(geo, mat);
+                    mesh.position.y = CONFIG.floorHeight / 2;
+                    mesh.userData = { type: 'Zone', name: 'Zone', labelText: 'Zone' };
+                } else if (type === 'stairs') {
+                    mesh = new THREE.Group();
+                    const steps = 8; const stepH = CONFIG.floorHeight/steps; const stepD = 4/steps;
+                    for(let i=0; i<steps; i++) {
+                        const s = new THREE.Mesh(new THREE.BoxGeometry(2, stepH, stepD), new THREE.MeshStandardMaterial({color: '#f97316'}));
+                        s.position.set(0, (i*stepH)+(stepH/2), (i*stepD)-2); s.castShadow=true; mesh.add(s);
+                    }
+                    const hit = new THREE.Mesh(new THREE.BoxGeometry(2, CONFIG.floorHeight, 4), new THREE.MeshBasicMaterial({visible:false}));
+                    hit.position.y = CONFIG.floorHeight/2; mesh.add(hit);
+                    mesh.userData = { type: 'Escalier', name: 'Escalier' };
+                }
+
+                if (mesh) {
+                    mesh.position.set(randX, yPos, randZ);
+                    mesh.userData.floor = this.floors.current;
+                    mesh.userData.labelColor = CONFIG.defaultLabelColor;
+                    mesh.userData.textColor = CONFIG.defaultTextColor;
+                    
+                    mesh.traverse(c => { if(c.isMesh && c.visible) { c.castShadow=true; c.receiveShadow=true; } });
+                    if (mesh.userData.labelText) this.addLabel(mesh, mesh.userData.labelText);
+
+                    this.scene.add(mesh);
+                    this.selectObject(mesh);
+                    this.stateManager.snapshot(); this.updateStats(); this.showToast(`${mesh.userData.name} créé`, 'success');
+                }
+                return mesh;
+            }
+
+            addLabel(parent, text) {
+                const old = parent.getObjectByName('Label');
+                if(old) parent.remove(old);
+                if(!text) return;
+                const canvas = document.createElement('canvas'); canvas.width = 512; canvas.height = 256;
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = parent.userData.labelColor || CONFIG.defaultLabelColor;
+                ctx.beginPath(); ctx.roundRect(20, 20, 472, 216, 40); ctx.fill();
+                ctx.strokeStyle = 'white'; ctx.lineWidth = 10; ctx.stroke();
+                ctx.fillStyle = parent.userData.textColor || CONFIG.defaultTextColor;
+                ctx.font = 'bold 120px Inter, Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText(text, 256, 128);
+                const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(canvas), depthTest: false }));
+                sprite.name = 'Label'; sprite.scale.set(2, 1, 1); sprite.position.set(0, CONFIG.floorHeight + 0.5, 0);
+                parent.add(sprite);
+            }
+
+            // --- SNAP & CONTRAINTES ---
+            snapObject(obj) {
+                if (obj.userData.isFurniture) {
+                    // 1. VERROUILLAGE Y CONSTANT (Empêche de traverser le sol/plafond)
+                    if (obj.userData.defaultY !== undefined) {
+                        obj.position.y = obj.userData.defaultY;
+                    }
+
+                    // 2. LOGIQUE "AIMANT" MUR (Porte & Fenêtre)
+                    if (obj.userData.isWallMounted) {
+                        const parent = obj.parent; // Le groupe Chambre
+                        // Si la chambre est redimensionnée, on adapte le calcul
+                        const w = (CONFIG.roomWidth * parent.scale.x) / 2;
+                        const d = (CONFIG.roomDepth * parent.scale.z) / 2;
+                        const margin = 0.15;
+
+                        const distN = Math.abs(obj.position.z - (-d)); // Nord
+                        const distS = Math.abs(obj.position.z - d);    // Sud
+                        const distE = Math.abs(obj.position.x - w);    // Est
+                        const distW = Math.abs(obj.position.x - (-w)); // Ouest
+
+                        const min = Math.min(distN, distS, distE, distW);
+
+                        if(min === distN) { // Mur Nord
+                            obj.position.z = -d + margin; obj.rotation.y = 0;
+                            obj.position.x = Math.max(-w+0.8, Math.min(w-0.8, obj.position.x));
+                        } else if (min === distS) { // Mur Sud
+                            obj.position.z = d - margin; obj.rotation.y = 0;
+                            obj.position.x = Math.max(-w+0.8, Math.min(w-0.8, obj.position.x));
+                        } else if (min === distE) { // Mur Est
+                            obj.position.x = w - margin; obj.rotation.y = Math.PI/2;
+                            obj.position.z = Math.max(-d+0.8, Math.min(d-0.8, obj.position.z));
+                        } else { // Mur Ouest
+                            obj.position.x = -w + margin; obj.rotation.y = Math.PI/2;
+                            obj.position.z = Math.max(-d+0.8, Math.min(d-0.8, obj.position.z));
+                        }
+                        
+                    } else {
+                        // 3. MEUBLES CLASSIQUES
+                        if(this.control.mode === 'translate') {
+                            obj.position.x = Math.round(obj.position.x / 0.1) * 0.1;
+                            obj.position.z = Math.round(obj.position.z / 0.1) * 0.1;
+                        } else if (this.control.mode === 'rotate') {
+                            obj.rotation.x = 0; obj.rotation.z = 0;
+                            obj.rotation.y = Math.round(obj.rotation.y / (Math.PI/4)) * (Math.PI/4);
+                        }
+
+                        // CONFINEMENT (Reste dans la pièce)
+                        const parent = obj.parent;
+                        const roomW = CONFIG.roomWidth * parent.scale.x; 
+                        const roomD = CONFIG.roomDepth * parent.scale.z; 
+                        const padding = 0.2; 
+                        const objW = (obj.userData.dims?.x || 0.5) / 2; const objD = (obj.userData.dims?.z || 0.5) / 2;
+
+                        const minX = - (roomW / 2) + objW + padding; const maxX = (roomW / 2) - objW - padding;
+                        const minZ = - (roomD / 2) + objD + padding; const maxZ = (roomD / 2) - objD - padding;
+
+                        obj.position.x = Math.max(minX, Math.min(maxX, obj.position.x));
+                        obj.position.z = Math.max(minZ, Math.min(maxZ, obj.position.z));
+                    }
+
+                } else {
+                    // 4. DÉPLACEMENT STRUCTURE
+                    if(this.control.mode === 'translate') {
+                        obj.position.x = Math.round(obj.position.x / CONFIG.gridSize) * CONFIG.gridSize;
+                        obj.position.z = Math.round(obj.position.z / CONFIG.gridSize) * CONFIG.gridSize;
+                        obj.position.y = obj.userData.floor * CONFIG.floorHeight;
+                    } else if (this.control.mode === 'rotate') {
+                        obj.rotation.x = 0; obj.rotation.z = 0;
+                        obj.rotation.y = Math.round(obj.rotation.y / (Math.PI/2)) * (Math.PI/2);
+                    }
+                }
+            }
+
+            // --- EVENTS ---
+            onPointerDown(event) {
+                if(this.isGlobalView) return;
+                const rect = this.renderer.domElement.getBoundingClientRect();
+                this.pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+                this.pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+                this.raycaster.setFromCamera(this.pointer, this.camera);
+                
+                const intersects = this.raycaster.intersectObjects(this.scene.children, true);
+                let target = null;
+
+                // --- PASSE 1 : RECHERCHE DE MEUBLES (PRIORITÉ ABSOLUE) ---
+                for (let hit of intersects) {
+                    if (hit.object.type === 'Sprite' || hit.object.name === 'Ground') continue;
+                    
+                    let node = hit.object;
+                    let foundFurniture = null;
+                    while(node && node.parent) {
+                        if(node.userData && node.userData.isFurniture) {
+                            let root = node; while(root.parent && root.parent !== this.scene) root = root.parent;
+                            if(root.userData.floor === this.floors.current) foundFurniture = node;
+                            break;
+                        }
+                        node = node.parent;
+                    }
+                    if(foundFurniture) {
+                        target = foundFurniture;
+                        break; // Trouvé ! On arrête tout de suite
+                    }
+                }
+
+                // --- PASSE 2 : SI AUCUN MEUBLE, RECHERCHE DE STRUCTURE ---
+                if (!target) {
+                    for (let hit of intersects) {
+                        if (hit.object.type === 'Sprite' || hit.object.name === 'Ground') continue;
+                        let node = hit.object;
+                        let foundStructure = null;
+                        while(node && node.parent) {
+                            if(node.parent === this.scene && node.userData.type) {
+                                if(node.userData.floor === this.floors.current) foundStructure = node;
+                                break;
+                            }
+                            node = node.parent;
+                        }
+                        if(foundStructure) {
+                            target = foundStructure;
+                            break;
+                        }
+                    }
+                }
+
+                this.selectObject(target);
+            }
+
+            selectObject(obj) {
+                this.selectedObject = obj;
+                const panel = document.getElementById('propPanel');
+                
+                if (obj) {
+                    this.control.attach(obj);
+                    panel.classList.remove('opacity-50', 'pointer-events-none', 'scale-95');
+                    panel.classList.add('opacity-100', 'scale-100');
+                    document.getElementById('propName').value = obj.userData.name || '';
+                    
+                    if(obj.userData.isFurniture) {
+                        document.getElementById('propTitle').innerText = "MOBILIER";
+                        document.getElementById('colorSection').classList.add('hidden');
+                        document.getElementById('sizeSection').classList.add('hidden');
+                        this.control.showY = false; 
+                    } else {
+                        document.getElementById('propTitle').innerText = "PROPRIÉTÉS";
+                        document.getElementById('colorSection').classList.remove('hidden');
+                        document.getElementById('sizeSection').classList.remove('hidden');
+                        this.control.showY = false; 
+                    }
+                } else {
+                    this.control.detach();
+                    panel.classList.add('opacity-50', 'pointer-events-none', 'scale-95');
+                }
+            }
+
+            // ... Rest (setMode, changeFloor, etc) same as before ...
+            setMode(mode) {
+                this.control.setMode(mode);
+                document.querySelectorAll('#toolTranslate, #toolRotate, #toolScale').forEach(el => el.classList.remove('text-blue-600', 'bg-blue-50'));
+                const id = 'tool' + mode.charAt(0).toUpperCase() + mode.slice(1);
+                document.getElementById(id).classList.add('text-blue-600', 'bg-blue-50');
+            }
+
+            changeFloor(delta) {
+                const next = this.floors.current + delta;
+                if (next < 0 || next > this.floors.max) return;
+                this.floors.current = next;
+                this.updateFloorVisibility(); this.updateUI(); this.selectObject(null);
+                this.gridHelper.position.y = this.floors.current * CONFIG.floorHeight;
+            }
+
+            addFloor() { this.floors.max++; this.changeFloor(1); this.showToast(`Étage ${this.floors.current} créé`, 'success'); this.stateManager.snapshot(); }
+
+            cloneCurrentFloor() {
+                const currentObjects = [];
+                this.scene.traverse(obj => {
+                    if(obj.userData && obj.userData.floor === this.floors.current && obj.userData.type) currentObjects.push(obj);
+                });
+                if(currentObjects.length === 0) { this.showToast('Étage vide', 'error'); return; }
+                this.addFloor();
+                currentObjects.forEach(original => {
+                    const furnitureList = [];
+                    const fGroup = original.getObjectByName('Furniture');
+                    if(fGroup) fGroup.children.forEach(c => furnitureList.push({type: c.userData.type, pos: c.position.toArray(), rot: c.rotation.toArray()}));
+                    const clone = this.createBlock(original.userData.type === 'Chambre' ? 'room' : original.userData.type === 'Couloir' ? 'corridor' : 'generic', furnitureList);
+                    if(clone) {
+                        clone.position.x = original.position.x; clone.position.z = original.position.z; clone.rotation.copy(original.rotation);
+                        if(original.userData.type !== 'Chambre') {
+                            clone.userData = JSON.parse(JSON.stringify(original.userData));
+                            clone.userData.floor = this.floors.current; 
+                        }
+                        if(clone.userData.labelText) this.addLabel(clone, clone.userData.labelText);
+                    }
+                });
+                this.stateManager.snapshot(); this.updateStats();
+            }
+
+            updateFloorVisibility() {
+                this.scene.traverse(obj => {
+                    if(obj.userData && obj.userData.type) {
+                        const isCurrent = obj.userData.floor === this.floors.current;
+                        if(this.isGlobalView) { obj.visible = true; this.setOpacity(obj, 1); } 
+                        else {
+                            if (obj.userData.floor > this.floors.current) obj.visible = false;
+                            else if (isCurrent) { obj.visible = true; this.setOpacity(obj, 1); }
+                            else { obj.visible = true; this.setOpacity(obj, 0.1); }
+                        }
+                    }
+                });
+            }
+
+            setOpacity(obj, val) {
+                obj.traverse(child => {
+                    if(child.isMesh) {
+                        if(child.material.transparent && child.material.opacity < 0.8 && val === 1) return; 
+                        if(Array.isArray(child.material)) child.material.forEach(m => { m.transparent = val < 1; m.opacity = val; });
+                        else { child.material.transparent = val < 1; child.material.opacity = val; }
+                    }
+                    if(child.name === 'Label') child.visible = val > 0.5;
+                });
+            }
+
+            setGlobalView(isGlobal) {
+                this.isGlobalView = isGlobal;
+                document.getElementById('viewFloor').classList.toggle('active', !isGlobal);
+                document.getElementById('viewGlobal').classList.toggle('active', isGlobal);
+                document.getElementById('viewGlobal').classList.toggle('bg-white/50', !isGlobal);
+                this.selectObject(null); this.control.enabled = !isGlobal; this.gridHelper.visible = !isGlobal;
+                if(isGlobal) { this.camera.position.set(50, 50, 50); this.camera.lookAt(0, (this.floors.max * CONFIG.floorHeight)/2, 0); } 
+                else { this.changeFloor(0); }
+                this.updateFloorVisibility();
+            }
+
+            applyColor(hex) {
+                if(!this.selectedObject) return;
+                const obj = this.selectedObject;
+                if(obj.userData.isFurniture) return; 
+                if(this.colorTarget === 'block') {
+                    const shell = obj.getObjectByName('RoomShell');
+                    if(shell) {
+                        shell.traverse(child => { if(child.isMesh) child.material.color.set(hex); });
+                    } else { obj.traverse(c => { if(c.isMesh) c.material.color.set(hex); }); }
+                } else {
+                    obj.userData.labelColor = hex; this.addLabel(obj, obj.userData.labelText);
+                }
+                this.stateManager.snapshot();
+            }
+
+            updateObjectName() {
+                if(!this.selectedObject) return;
+                const val = document.getElementById('propName').value;
+                if(val) {
+                    this.selectedObject.userData.name = val;
+                    if(this.selectedObject.userData.isFurniture) { } 
+                    else if(val.length < 5) { this.selectedObject.userData.labelText = val; this.addLabel(this.selectedObject, val); }
+                    this.showToast('Nom mis à jour', 'success'); this.stateManager.snapshot();
+                }
+            }
+
+            resizeSelection(size) {
+                if(!this.selectedObject || this.selectedObject.userData.isFurniture) return;
+                const scales = { 'S': [0.8, 1, 0.8], 'M': [1, 1, 1], 'L': [1.5, 1, 1.2] };
+                const s = scales[size];
+                this.selectedObject.scale.set(s[0], s[1], s[2]);
+                this.snapObject(this.selectedObject); 
+                this.stateManager.snapshot(); this.updateStats();
+            }
+
+            duplicateSelection() {
+                if(!this.selectedObject) return;
+                if(this.selectedObject.userData.isFurniture) {
+                    const clone = this.selectedObject.clone();
+                    clone.position.x += 0.5; clone.position.z += 0.5;
+                    this.selectedObject.parent.add(clone); this.selectObject(clone);
+                } else {
+                    const original = this.selectedObject;
+                    const furnitureList = [];
+                    const fGroup = original.getObjectByName('Furniture');
+                    if(fGroup) fGroup.children.forEach(c => furnitureList.push({type: c.userData.type, pos: c.position.toArray(), rot: c.rotation.toArray()}));
+                    const clone = this.createBlock(original.userData.type === 'Chambre' ? 'room' : original.userData.type, furnitureList);
+                    if(clone) {
+                        clone.position.copy(original.position); clone.position.x += 2; clone.position.z += 2; clone.rotation.copy(original.rotation);
+                        clone.userData = JSON.parse(JSON.stringify(original.userData));
+                         if(!isNaN(parseInt(clone.userData.labelText))) {
+                            const newNum = this.roomCounter++; clone.userData.labelText = newNum.toString(); clone.userData.name = `Chambre ${newNum}`;
+                            this.addLabel(clone, clone.userData.labelText);
+                        }
+                    }
+                }
+                this.stateManager.snapshot(); this.updateStats(); this.showToast('Objet dupliqué', 'success');
+            }
+
+            deleteSelection() {
+                if(!this.selectedObject) return;
+                if(this.selectedObject.userData.isFurniture) this.selectedObject.parent.remove(this.selectedObject);
+                else this.scene.remove(this.selectedObject);
+                this.selectObject(null); this.stateManager.snapshot(); this.updateStats(); this.showToast('Supprimé', 'info');
+            }
+
+            serializeScene() {
+                const objects = [];
+                this.scene.traverse(obj => {
+                    if(obj.userData && obj.userData.type) {
+                        const furniture = [];
+                        const fGroup = obj.getObjectByName('Furniture');
+                        if(fGroup) fGroup.children.forEach(c => furniture.push({ type: c.userData.type, pos: c.position.toArray(), rot: c.rotation.toArray() }));
+                        objects.push({ type: obj.userData.type, position: obj.position.toArray(), rotation: obj.rotation.toArray(), scale: obj.scale.toArray(), userData: obj.userData, furniture: furniture });
+                    }
+                });
+                return { version: 2.5, timestamp: Date.now(), roomCounter: this.roomCounter, floors: this.floors, objects: objects };
+            }
+
+            saveToFile() {
+                const data = JSON.stringify(this.serializeScene(), null, 2);
+                const blob = new Blob([data], {type: 'application/json'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a'); a.href = url; a.download = `flexilogis_v2.5_${new Date().toISOString().slice(0,10)}.json`; a.click();
+                this.showToast('Projet sauvegardé', 'success');
+            }
+
+            loadScene(state) {
+                this.resetScene(false); this.roomCounter = state.roomCounter; this.floors = state.floors;
+                state.objects.forEach(data => {
+                    const savedCurrent = this.floors.current; this.floors.current = data.userData.floor;
+                    let obj;
+                    if(data.type === 'Chambre') obj = this.createBlock('room', data.furniture);
+                    else if(data.type === 'Couloir') obj = this.createBlock('corridor');
+                    else if(data.type === 'Zone' || data.type === 'Generic') obj = this.createBlock('generic');
+                    else if(data.type === 'Escalier') obj = this.createBlock('stairs');
+                    if(obj) {
+                        obj.position.fromArray(data.position); obj.rotation.fromArray(data.rotation); obj.scale.fromArray(data.scale); obj.userData = data.userData;
+                        if(obj.userData.labelText) this.addLabel(obj, obj.userData.labelText);
+                        if(obj.userData.labelColor) this.selectedObject = obj; 
+                    }
+                    this.floors.current = savedCurrent;
+                });
+                this.updateFloorVisibility(); this.updateUI(); this.updateStats();
+            }
+
+            loadFile(event) {
+                const file = event.target.files[0]; if(!file) return;
+                const reader = new FileReader();
+                reader.onload = (e) => { try { this.loadScene(JSON.parse(e.target.result)); this.showToast('Chargé', 'success'); } catch(err) { console.error(err); this.showToast('Erreur', 'error'); } };
+                reader.readAsText(file); event.target.value = '';
+            }
+
+            resetScene(createDefault = true) {
+                const toRemove = []; this.scene.traverse(obj => { if(obj.userData && obj.userData.type) toRemove.push(obj); });
+                toRemove.forEach(o => this.scene.remove(o));
+                this.roomCounter = 1; this.floors = { current: 0, max: 0 }; this.updateUI(); this.updateStats();
+                if(createDefault) { this.createBlock('room'); this.stateManager.history = []; this.stateManager.snapshot(); this.showToast('Reset', 'info'); }
+            }
+
+            updateUI() {
+                document.getElementById('floorNumberDisplay').innerText = this.floors.current;
+                document.getElementById('floorBadge').innerText = this.floors.current === 0 ? "RDC" : "ÉTAGE " + this.floors.current;
+                document.getElementById('floorDown').disabled = this.floors.current === 0;
+                document.getElementById('floorUp').disabled = this.floors.current === this.floors.max;
+            }
+
+            updateStats() {
+                let count = 0; let area = 0;
+                this.scene.traverse(obj => { if(obj.userData && obj.userData.type === 'Chambre') { count++; area += (obj.scale.x * 4) * (obj.scale.z * 6); } });
+                document.getElementById('statRooms').innerText = count; document.getElementById('statArea').innerText = Math.round(area) + " m²";
+            }
+
+            showToast(msg, type = 'success') {
+                const container = document.getElementById('toast-container');
+                const el = document.createElement('div'); el.className = `toast ${type}`;
+                let icon = 'check-circle'; if(type==='error') icon='alert-circle'; if(type==='info') icon='info';
+                el.innerHTML = `<i data-lucide="${icon}" size="18"></i> <span>${msg}</span>`;
+                container.appendChild(el); lucide.createIcons({ root: el });
+                setTimeout(() => { el.style.animation = 'fadeOut 0.3s forwards'; setTimeout(() => el.remove(), 300); }, 3000);
+            }
+
+            onResize() {
+                this.camera.aspect = window.innerWidth / window.innerHeight;
+                this.camera.updateProjectionMatrix();
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+            
+            onKeyDown(e) {
+                if(e.target.tagName === 'INPUT') return; 
+                const k = e.key.toLowerCase();
+                if((e.ctrlKey||e.metaKey) && k === 'z') { e.preventDefault(); this.stateManager.undo(); return; }
+                if((e.ctrlKey||e.metaKey) && k === 'y') { e.preventDefault(); this.stateManager.redo(); return; }
+                if(k === 'w') this.setMode('translate'); if(k === 'e') this.setMode('rotate'); if(k === 'r') this.setMode('scale');
+                if(k === 'delete' || k === 'backspace') this.deleteSelection();
+            }
+
+            animate() {
+                this.orbit.update();
+                if(!this.isGlobalView) {
+                    this.scene.traverse(obj => {
+                        if(obj.name === 'Label') {
+                            const dist = obj.position.distanceTo(this.camera.position);
+                            const scale = Math.max(1.5, dist / 15);
+                            obj.scale.set(scale * 2, scale, 1);
+                        }
+                    });
+                }
+                this.renderer.render(this.scene, this.camera);
+            }
+        }
+
+        const app = new HotelArchitect();
+        window.app = app; 
+    </script>
+</body>
+</html>
