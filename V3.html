@@ -1484,12 +1484,20 @@
                         // CONFINEMENT (Reste dans la pièce)
                         const parent = obj.parent;
                         const roomW = CONFIG.roomWidth * parent.scale.x;
-                        const roomD = CONFIG.roomDepth * parent.scale.z; 
+                        const roomD = CONFIG.roomDepth * parent.scale.z;
                         const padding = 0.2;
-                        const objW = ((obj.userData.dims?.x || 0.5) * (obj.scale?.x || 1)) / 2; const objD = ((obj.userData.dims?.z || 0.5) * (obj.scale?.z || 1)) / 2;
+                        const dimsX = (obj.userData.dims?.x || 0.5) * (obj.scale?.x || 1);
+                        const dimsZ = (obj.userData.dims?.z || 0.5) * (obj.scale?.z || 1);
+                        const rotY = obj.rotation?.y || 0;
+                        const cosY = Math.abs(Math.cos(rotY));
+                        const sinY = Math.abs(Math.sin(rotY));
 
-                        const minX = - (roomW / 2) + objW + padding; const maxX = (roomW / 2) - objW - padding;
-                        const minZ = - (roomD / 2) + objD + padding; const maxZ = (roomD / 2) - objD - padding;
+                        // Rayon projeté sur les axes après rotation (AABB du rectangle tourné)
+                        const halfX = (dimsX * cosY + dimsZ * sinY) / 2;
+                        const halfZ = (dimsZ * cosY + dimsX * sinY) / 2;
+
+                        const minX = - (roomW / 2) + halfX + padding; const maxX = (roomW / 2) - halfX - padding;
+                        const minZ = - (roomD / 2) + halfZ + padding; const maxZ = (roomD / 2) - halfZ - padding;
 
                         obj.position.x = Math.max(minX, Math.min(maxX, obj.position.x));
                         obj.position.z = Math.max(minZ, Math.min(maxZ, obj.position.z));
