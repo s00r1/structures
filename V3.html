@@ -443,6 +443,10 @@
                     <span class="block text-[10px] font-bold text-gray-500">TRANSPARENCE</span>
                     <span id="opacityValue" class="text-[10px] text-gray-500 font-semibold">100%</span>
                 </div>
+                <div id="opacityTargetGroup" class="flex text-[10px] font-bold text-gray-500 mb-2 gap-2 bg-gray-50 p-1 rounded hidden">
+                    <button id="opacityTargetWalls" class="flex-1 py-1 rounded text-center transition bg-white shadow-sm text-gray-800">Chambre</button>
+                    <button id="opacityTargetFurniture" class="flex-1 py-1 rounded text-center transition hover:bg-white text-gray-400">Objets</button>
+                </div>
                 <input id="opacityInput" type="range" min="0.05" max="1" step="0.05" value="1" class="w-full accent-blue-500">
                 <div class="text-[10px] text-slate-500 mt-1">Ajuste la visibilité de l'objet ou structure sélectionné(e).</div>
             </div>
@@ -1004,7 +1008,7 @@
                   this.scene = null; this.camera = null; this.renderer = null;
                   this.orbit = null; this.control = null; this.raycaster = new THREE.Raycaster(); this.pointer = new THREE.Vector2();
                   this.floors = { current: 0, max: 0 }; this.roomCounter = 1;
-                  this.selectedObject = null; this.selectionLocked = false; this.isGlobalView = false; this.colorTarget = 'block'; this.labelsVisible = true;
+                  this.selectedObject = null; this.selectionLocked = false; this.isGlobalView = false; this.colorTarget = 'block'; this.opacityTarget = 'walls'; this.labelsVisible = true;
                   this.cablesVisible = true; this.cableMaterials = [];
                   this.breakerCableGroup = null;
                   this.furnitureChoices = [
@@ -1150,6 +1154,8 @@
                 document.getElementById('redoBtn').onclick = () => this.stateManager.redo();
                 document.getElementById('rotateClockwise').onclick = () => this.applyPresetRotation('cw');
                 document.getElementById('rotateCounter').onclick = () => this.applyPresetRotation('ccw');
+                document.getElementById('opacityTargetWalls').onclick = () => this.setOpacityTarget('walls');
+                document.getElementById('opacityTargetFurniture').onclick = () => this.setOpacityTarget('furniture');
                 document.getElementById('opacityInput').addEventListener('input', (e) => this.updateSelectionOpacity(parseFloat(e.target.value), false));
                 document.getElementById('opacityInput').addEventListener('change', (e) => this.updateSelectionOpacity(parseFloat(e.target.value), true));
                 document.getElementById('labelSizeInput').oninput = (e) => this.updateLabelScale(parseFloat(e.target.value));
@@ -1275,7 +1281,9 @@
                           doorLabelVisible: true,
                           roomId: this.makeRoomId(),
                           wallColor: '#6366f1',
-                          opacity: 1
+                          opacity: 1,
+                          wallOpacity: 1,
+                          furnitureOpacity: 1
                       };
                     this.roomCounter++;
                 }
@@ -2052,9 +2060,19 @@
                 });
             }
 
-            getOpacityTargets(obj) {
+            getEffectiveOpacityTarget(obj) {
+                if(!obj) return 'object';
+                return obj.userData?.type === 'Chambre' ? this.opacityTarget : 'object';
+            }
+
+            getOpacityTargets(obj, target = null) {
                 if(!obj) return [];
+                const scope = target || this.getEffectiveOpacityTarget(obj);
                 if(obj.userData?.type === 'Chambre') {
+                    if(scope === 'furniture') {
+                        const furniture = obj.getObjectByName('Furniture');
+                        return furniture ? [furniture] : [];
+                    }
                     const shell = obj.getObjectByName('RoomShell');
                     return shell ? [shell] : [obj];
                 }
@@ -2103,10 +2121,10 @@
                 });
             }
 
-            computeObjectOpacity(obj) {
+            computeObjectOpacity(obj, target = null) {
                 const values = [];
-                this.getOpacityTargets(obj).forEach(target => {
-                    target?.traverse(child => {
+                this.getOpacityTargets(obj, target).forEach(t => {
+                    t?.traverse(child => {
                         if(!child.isMesh) return;
                         const mats = Array.isArray(child.material) ? child.material : [child.material];
                         mats.forEach(mat => {
@@ -2121,20 +2139,34 @@
                 return THREE.MathUtils.clamp(avg, 0.05, 1);
             }
 
-            applyStoredOpacityToObject(obj) {
+            getStoredOpacity(obj, target = null) {
+                if(!obj) return 1;
+                const scope = target || this.getEffectiveOpacityTarget(obj);
+                if(obj.userData?.type === 'Chambre') {
+                    if(scope === 'furniture') return obj.userData.furnitureOpacity ?? 1;
+                    return obj.userData.wallOpacity ?? obj.userData.opacity ?? 1;
+                }
+                return obj.userData.opacity ?? this.computeObjectOpacity(obj, scope);
+            }
+
+            applyStoredOpacityToObject(obj, target = null) {
                 if(!obj) return;
-                if(obj.userData.opacity === undefined) obj.userData.opacity = this.computeObjectOpacity(obj);
-                this.getOpacityTargets(obj).forEach(target => {
-                    target?.traverse(child => {
-                        if(!child.isMesh) return;
-                        const mats = Array.isArray(child.material) ? child.material : [child.material];
-                        mats.forEach(mat => {
-                            if(!mat) return;
-                            if(!mat.userData) mat.userData = {};
-                            if(mat.userData.baseTransparent === undefined) mat.userData.baseTransparent = mat.transparent ?? false;
-                            mat.userData.baseOpacity = obj.userData.opacity;
-                            mat.transparent = mat.userData.baseTransparent || obj.userData.opacity < 1;
-                            mat.opacity = obj.userData.opacity;
+                const scopes = target ? [target] : (obj.userData?.type === 'Chambre' ? ['walls', 'furniture'] : ['object']);
+                scopes.forEach(scope => {
+                    const currentOpacity = this.getStoredOpacity(obj, scope);
+                    if(obj.userData.opacity === undefined && scope === 'object') obj.userData.opacity = this.computeObjectOpacity(obj, scope);
+                    this.getOpacityTargets(obj, scope).forEach(targetObj => {
+                        targetObj?.traverse(child => {
+                            if(!child.isMesh) return;
+                            const mats = Array.isArray(child.material) ? child.material : [child.material];
+                            mats.forEach(mat => {
+                                if(!mat) return;
+                                if(!mat.userData) mat.userData = {};
+                                if(mat.userData.baseTransparent === undefined) mat.userData.baseTransparent = mat.transparent ?? false;
+                                mat.userData.baseOpacity = currentOpacity;
+                                mat.transparent = mat.userData.baseTransparent || currentOpacity < 1;
+                                mat.opacity = currentOpacity;
+                            });
                         });
                     });
                 });
@@ -2143,16 +2175,56 @@
             refreshOpacityUI(obj) {
                 const slider = document.getElementById('opacityInput');
                 const label = document.getElementById('opacityValue');
-                const value = obj ? (obj.userData.opacity ?? this.computeObjectOpacity(obj)) : 1;
+                const activeTarget = this.getEffectiveOpacityTarget(obj);
+                const value = obj ? this.getStoredOpacity(obj, activeTarget) : 1;
                 if(slider) slider.value = value;
                 if(label) label.textContent = `${Math.round(value * 100)}%`;
+                this.updateOpacityTargetUI(obj);
+            }
+
+            updateOpacityTargetUI(obj) {
+                const group = document.getElementById('opacityTargetGroup');
+                const wallBtn = document.getElementById('opacityTargetWalls');
+                const furnitureBtn = document.getElementById('opacityTargetFurniture');
+                const isRoom = obj?.userData?.type === 'Chambre';
+
+                if(group) group.classList.toggle('hidden', !isRoom);
+                if(!wallBtn || !furnitureBtn) return;
+
+                furnitureBtn.classList.toggle('opacity-50', !isRoom);
+                furnitureBtn.classList.toggle('pointer-events-none', !isRoom);
+
+                const active = isRoom ? this.opacityTarget : 'walls';
+                const setState = (btn, enabled) => {
+                    btn.classList.toggle('bg-white', enabled);
+                    btn.classList.toggle('shadow-sm', enabled);
+                    btn.classList.toggle('text-gray-800', enabled);
+                    btn.classList.toggle('text-gray-400', !enabled);
+                };
+
+                setState(wallBtn, active === 'walls');
+                setState(furnitureBtn, active === 'furniture');
+            }
+
+            setOpacityTarget(target) {
+                if(!this.selectedObject || this.selectedObject.userData?.type !== 'Chambre') return;
+                this.opacityTarget = target === 'furniture' ? 'furniture' : 'walls';
+                this.refreshOpacityUI(this.selectedObject);
             }
 
             updateSelectionOpacity(val, snapshot = true) {
                 if(!this.selectedObject || isNaN(val)) return;
                 const clamped = THREE.MathUtils.clamp(val, 0.05, 1);
-                this.selectedObject.userData.opacity = clamped;
-                this.applyStoredOpacityToObject(this.selectedObject);
+                const target = this.getEffectiveOpacityTarget(this.selectedObject);
+
+                if(this.selectedObject.userData?.type === 'Chambre') {
+                    if(target === 'furniture') this.selectedObject.userData.furnitureOpacity = clamped;
+                    else { this.selectedObject.userData.wallOpacity = clamped; this.selectedObject.userData.opacity = clamped; }
+                } else {
+                    this.selectedObject.userData.opacity = clamped;
+                }
+
+                this.applyStoredOpacityToObject(this.selectedObject, target);
                 this.setOpacity(this.selectedObject, 1);
                 this.refreshOpacityUI(this.selectedObject);
                 if(snapshot) this.stateManager.snapshot();
