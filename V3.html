@@ -1680,6 +1680,10 @@
                 if(!factory) { this.showToast('Objet inconnu', 'error'); return; }
                 let container = target.getObjectByName('Furniture');
                 if(!container) { container = new THREE.Group(); container.name = 'Furniture'; target.add(container); }
+                if(type === 'wcDoor') {
+                    const innerWalls = container.children.filter(c => c.userData?.type === 'innerWall');
+                    if(innerWalls.length === 0) { this.showToast('Impossible d\'ajouter une porte WC sans mur intérieur.', 'error'); return; }
+                }
                 const item = factory();
                 item.position.set(0, item.userData.defaultY || 0, 0);
                   container.add(item);
@@ -1713,15 +1717,61 @@
             }
 
             // --- SNAP & CONTRAINTES ---
+            snapWcDoorToInnerWall(obj) {
+                const room = obj.parent;
+                if(!room) return;
+                const furniture = room.getObjectByName('Furniture');
+                const innerWalls = furniture ? furniture.children.filter(c => c.userData?.type === 'innerWall') : [];
+
+                if(innerWalls.length === 0) {
+                    this.showToast('Impossible de placer une porte WC : aucun mur intérieur créé.', 'error');
+                    obj.position.set(0, obj.position.y, 0);
+                    return;
+                }
+
+                let closestWall = null; let minDist = Infinity;
+                innerWalls.forEach(wall => {
+                    const dist = wall.position.distanceTo(obj.position);
+                    if(dist < minDist) { minDist = dist; closestWall = wall; }
+                });
+                if(!closestWall) return;
+
+                const wallDims = closestWall.userData?.dims || { x: 0.2, z: 3 };
+                const doorDims = obj.userData?.dims || { x: 0.9, z: 0.3 };
+                const rotY = closestWall.rotation?.y || 0;
+                const wallLength = Math.abs(Math.cos(rotY)) > 0.5 ? wallDims.z : wallDims.x;
+                const halfLength = wallLength / 2 - (doorDims.x / 2);
+
+                if(Math.abs(Math.cos(rotY)) > 0.5) {
+                    // Mur orienté Nord/Sud : épaisseur sur X
+                    const offset = (wallDims.x / 2) + (doorDims.z / 2) + 0.02;
+                    const direction = Math.sign(obj.position.x - closestWall.position.x) || 1;
+                    obj.position.x = closestWall.position.x + direction * offset;
+                    obj.position.z = THREE.MathUtils.clamp(obj.position.z, closestWall.position.z - halfLength, closestWall.position.z + halfLength);
+                    obj.rotation.y = 0;
+                } else {
+                    // Mur orienté Est/Ouest : épaisseur sur Z
+                    const offset = (wallDims.z / 2) + (doorDims.z / 2) + 0.02;
+                    const direction = Math.sign(obj.position.z - closestWall.position.z) || 1;
+                    obj.position.z = closestWall.position.z + direction * offset;
+                    obj.position.x = THREE.MathUtils.clamp(obj.position.x, closestWall.position.x - halfLength, closestWall.position.x + halfLength);
+                    obj.rotation.y = Math.PI / 2;
+                }
+            }
+
             snapObject(obj) {
                 if (obj.userData.isFurniture) {
-                    // 1. VERROUILLAGE Y CONSTANT (Empêche de traverser le sol/plafond)
-                    if (obj.userData.defaultY !== undefined) {
-                        obj.position.y = obj.userData.defaultY;
-                    }
+                    // 1. Gestion de la hauteur : déplacement vertical autorisé mais limité à la pièce
+                    const minY = 0;
+                    const maxY = CONFIG.floorHeight * 0.99;
+                    obj.position.y = THREE.MathUtils.clamp(obj.position.y, minY, maxY);
 
                     // 2. LOGIQUE "AIMANT" MUR (Porte & Fenêtre)
                     if (obj.userData.isWallMounted) {
+                        if(obj.userData.type === 'wcDoor') {
+                            this.snapWcDoorToInnerWall(obj);
+                            return;
+                        }
                         const parent = obj.parent; // Le groupe Chambre
                         // Si la chambre est redimensionnée, on adapte le calcul
                         const w = (CONFIG.roomWidth * parent.scale.x) / 2;
@@ -2184,6 +2234,7 @@
                     const clone = this.selectedObject.clone();
                     clone.position.x += 0.5; clone.position.z += 0.5;
                     this.restoreMaterialOpacity(clone);
+                    this.setOpacity(clone, 1);
                     this.selectedObject.parent.add(clone); this.selectObject(clone);
                 } else {
                     const original = this.selectedObject;
@@ -2216,11 +2267,12 @@
                         this.ensureLabelDefaults(clone);
                         if(clone.userData.type === 'Chambre') this.setRoomWallColor(clone, clone.userData.wallColor || '#6366f1');
                         if(!isNaN(parseInt(clone.userData.labelText))) {
-                              const newNum = this.roomCounter++; clone.userData.labelText = newNum.toString(); clone.userData.name = `Chambre ${newNum}`;
+                          const newNum = this.roomCounter++; clone.userData.labelText = newNum.toString(); clone.userData.name = `Chambre ${newNum}`;
                               this.addLabel(clone, clone.userData.labelText);
                           }
                           this.refreshDoorLabels(clone);
                           this.restoreMaterialOpacity(clone);
+                          this.setOpacity(clone, 1);
                       }
                   }
                   this.updateFloorVisibility();
