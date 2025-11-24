@@ -1973,9 +1973,24 @@
             setOpacity(obj, val) {
                 obj.traverse(child => {
                     if(child.isMesh) {
-                        if(child.material.transparent && child.material.opacity < 0.8 && val === 1) return;
-                        if(Array.isArray(child.material)) child.material.forEach(m => { m.transparent = val < 1; m.opacity = val; });
-                        else { child.material.transparent = val < 1; child.material.opacity = val; }
+                        const applyToMaterial = (mat) => {
+                            if(!mat.userData) mat.userData = {};
+                            if(mat.userData.baseOpacity === undefined) {
+                                mat.userData.baseOpacity = mat.opacity ?? 1;
+                                mat.userData.baseTransparent = mat.transparent ?? false;
+                            }
+
+                            if(val === 1) {
+                                mat.opacity = mat.userData.baseOpacity;
+                                mat.transparent = mat.userData.baseTransparent;
+                            } else {
+                                mat.transparent = true;
+                                mat.opacity = val;
+                            }
+                        };
+
+                        if(Array.isArray(child.material)) child.material.forEach(applyToMaterial);
+                        else applyToMaterial(child.material);
                     }
                     if(child.name === 'Label') child.visible = val > 0.5 && this.labelsVisible && child.parent?.userData.labelVisible !== false;
                 });
