@@ -1591,7 +1591,7 @@
                 return true;
             }
 
-            refreshDoorLabels(obj) {
+            refreshDoorLabels(obj, allowFallback = true) {
                 if(!this.supportsDoorBadge(obj)) return;
                 this.ensureLabelDefaults(obj);
                 this.clearDoorBadges(obj);
@@ -1604,7 +1604,7 @@
                         if(this.attachDoorBadgeToDoor(child, text)) attached = true;
                     }
                 });
-                if(!attached) this.attachDoorBadgeToFront(obj, text);
+                if(!attached && allowFallback) this.attachDoorBadgeToFront(obj, text);
             }
 
             refreshLabelUI(obj) {
@@ -2618,7 +2618,7 @@
                 if(this.selectedObject.userData.isFurniture) this.selectedObject.parent.remove(this.selectedObject);
                 else this.scene.remove(this.selectedObject);
 
-                if(isDoorFurniture && parentRoom) this.refreshDoorLabels(parentRoom);
+                if(isDoorFurniture && parentRoom) this.refreshDoorLabels(parentRoom, false);
                 this.selectObject(null); this.updateBreakerCables(); this.stateManager.snapshot(); this.updateStats(); this.showToast('Supprimé', 'info');
             }
 
