@@ -2286,7 +2286,11 @@
                 if(val) {
                     this.selectedObject.userData.name = val;
                     if(this.selectedObject.userData.isFurniture) { }
-                    else if(val.length < 5) { this.selectedObject.userData.labelText = val; this.addLabel(this.selectedObject, val); }
+                    else {
+                        const numericLabel = val.match(/\d+/)?.[0] || val;
+                        this.selectedObject.userData.labelText = numericLabel;
+                        this.addLabel(this.selectedObject, numericLabel);
+                    }
                     this.refreshDoorLabels(this.selectedObject);
                     this.showToast('Nom mis à jour', 'success'); this.stateManager.snapshot();
                 }
