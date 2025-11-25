@@ -38,6 +38,44 @@
             color: #0f172a;
         }
 
+        .tab-pill {
+            flex: 1 1 0;
+            padding: 8px 12px;
+            font-size: 11px;
+            font-weight: 800;
+            border-radius: 12px;
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            background: rgba(15, 23, 42, 0.04);
+            color: #475569;
+        }
+
+        .tab-pill.active {
+            background: linear-gradient(135deg, #0ea5e9, #6366f1);
+            color: white;
+            border-color: rgba(255,255,255,0.3);
+            box-shadow: 0 8px 24px rgba(14,165,233,0.25);
+        }
+
+        .subsection-card {
+            border: 1px dashed rgba(15,23,42,0.12);
+            background: rgba(255,255,255,0.75);
+        }
+
+        .chip {
+            border: 1px solid rgba(148, 163, 184, 0.4);
+            padding: 3px 8px;
+            border-radius: 9999px;
+            font-size: 10px;
+            font-weight: 700;
+            color: #0f172a;
+            background: rgba(241, 245, 249, 0.8);
+        }
+
         .badge {
             display: inline-flex;
             align-items: center;
@@ -130,8 +168,8 @@
     <div id="toast-container"></div>
 
     <!-- Command Ribbon -->
-    <div class="absolute top-4 left-1/2 -translate-x-1/2 w-[620px] z-20">
-        <div class="glass-panel rounded-2xl p-3 shadow-xl">
+    <div class="absolute top-3 left-1/2 -translate-x-1/2 w-[720px] z-20">
+        <div class="glass-panel rounded-2xl p-4 shadow-xl border border-white/60">
             <div class="flex items-center justify-between gap-4">
                 <div class="flex items-center gap-3">
                     <div class="bg-sky-600 text-white p-2 rounded-xl shadow-inner"><i data-lucide="sparkles" size="20"></i></div>
@@ -140,7 +178,12 @@
                         <div class="text-lg font-extrabold text-slate-900">Flexilogis Experience</div>
                     </div>
                 </div>
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2 flex-wrap justify-end">
+                    <div class="flex bg-slate-100 rounded-xl p-1 gap-1" id="modeSwitcher">
+                        <button data-mode-btn="chambre" class="tab-pill active"><i data-lucide="layout-template" size="14"></i>Mode chambre</button>
+                        <button data-mode-btn="construction" class="tab-pill"><i data-lucide="blocks" size="14"></i>Construction</button>
+                        <button data-mode-btn="exterieur" class="tab-pill"><i data-lucide="trees" size="14"></i>Extérieur</button>
+                    </div>
                     <span id="modeChip" class="pill bg-sky-600/90">Mode déplacement</span>
                     <span id="selectionChip" class="pill bg-emerald-600/90">Aucune sélection</span>
                     <button id="selectionLockBtn" class="pill bg-slate-700/80 text-white flex items-center gap-1 hover:bg-slate-800 transition" title="Verrouiller la sélection">
@@ -149,23 +192,23 @@
                 </div>
             </div>
             <div class="mt-3 grid grid-cols-3 gap-2 text-xs text-slate-500">
-                <div class="soft-card rounded-xl p-2 flex items-center gap-2"><i data-lucide="mouse-pointer-2" size="14"></i><span>Glisser pour orbiter, clic pour sélectionner</span></div>
+                <div class="soft-card rounded-xl p-2 flex items-center gap-2"><i data-lucide="mouse-pointer-2" size="14"></i><span>Orbiter + cliquer pour cibler</span></div>
                 <div class="soft-card rounded-xl p-2 flex items-center gap-2"><i data-lucide="scan" size="14"></i><span id="selectionSummary">Inspecteur inactif</span></div>
-                <div class="soft-card rounded-xl p-2 flex items-center gap-2"><i data-lucide="keyboard" size="14"></i><span>Raccourcis : W/E/R, Ctrl+Z/Y</span></div>
+                <div class="soft-card rounded-xl p-2 flex items-center gap-2"><i data-lucide="keyboard" size="14"></i><span>W/E/R · Ctrl+Z/Y</span></div>
             </div>
         </div>
     </div>
 
     <!-- LEFT PANEL: Creation & Tools -->
-    <div class="absolute top-4 left-4 w-72 flex flex-col gap-3 z-10 max-h-[95vh]">
-        
+    <div class="absolute top-4 left-4 w-80 flex flex-col gap-3 z-10 max-h-[95vh] overflow-y-auto pr-1">
+
         <!-- Header -->
         <div class="glass-panel p-4 rounded-xl flex items-center justify-between">
             <div class="flex items-center gap-2">
                 <div class="bg-blue-600 p-1.5 rounded-lg text-white"><i data-lucide="building-2" size="20"></i></div>
                 <div>
                     <h1 class="font-bold text-gray-800 text-sm leading-tight">Flexilogis Studio</h1>
-                    <div class="text-[10px] text-gray-500 font-mono">PROD V2.5 FIX</div>
+                    <div class="text-[10px] text-gray-500 font-mono">UI refonte complète</div>
                 </div>
             </div>
             <!-- Undo/Redo Mini -->
@@ -185,7 +228,7 @@
                 <span class="text-xs font-bold text-gray-500 uppercase">Niveau Actif</span>
                 <span id="floorBadge" class="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded font-bold border border-blue-200">RDC</span>
             </div>
-            
+
             <div class="flex items-center gap-2 mb-2">
                 <button id="floorDown" class="w-8 h-8 flex items-center justify-center bg-white border border-gray-200 rounded hover:bg-gray-50 text-gray-600 transition">
                     <i data-lucide="chevron-down" size="18"></i>
@@ -208,118 +251,260 @@
             </div>
         </div>
 
-        <!-- Library -->
-        <div class="glass-panel p-3 rounded-xl flex-1 overflow-y-auto">
-            <span class="text-xs font-bold text-gray-400 uppercase block mb-2">Bibliothèque</span>
-            <div class="space-y-2">
-                <button onclick="app.createBlock('room')" class="w-full flex items-center gap-3 p-2 bg-white hover:bg-blue-50 border border-gray-200 hover:border-blue-300 rounded-lg transition group text-left">
-                    <div class="w-8 h-8 rounded bg-indigo-100 text-indigo-600 flex items-center justify-center"><i data-lucide="bed-double" size="16"></i></div>
-                    <div class="flex-1">
-                        <div class="text-xs font-bold text-gray-700 group-hover:text-blue-700">Chambre Complète</div>
-                        <div class="text-[10px] text-gray-400">Avec Fenêtre & Porte</div>
-                    </div>
-                </button>
-                
-                <button onclick="app.createBlock('corridor')" class="w-full flex items-center gap-3 p-2 bg-white hover:bg-teal-50 border border-gray-200 hover:border-teal-300 rounded-lg transition group text-left">
-                    <div class="w-8 h-8 rounded bg-teal-100 text-teal-600 flex items-center justify-center"><i data-lucide="arrow-up-down" size="16"></i></div>
-                    <div class="flex-1">
-                        <div class="text-xs font-bold text-gray-700 group-hover:text-teal-700">Couloir</div>
-                        <div class="text-[10px] text-gray-400">Liaison</div>
-                    </div>
-                </button>
-
-                <button onclick="app.createBlock('stairs')" class="w-full flex items-center gap-3 p-2 bg-white hover:bg-orange-50 border border-gray-200 hover:border-orange-300 rounded-lg transition group text-left">
-                    <div class="w-8 h-8 rounded bg-orange-100 text-orange-600 flex items-center justify-center"><i data-lucide="move-up-right" size="16"></i></div>
-                    <div class="flex-1">
-                        <div class="text-xs font-bold text-gray-700 group-hover:text-orange-700">Escalier</div>
-                        <div class="text-[10px] text-gray-400">Vertical</div>
-                    </div>
-                </button>
-
-                <button onclick="app.createBlock('generic')" class="w-full flex items-center gap-3 p-2 bg-white hover:bg-gray-50 border border-gray-200 hover:border-gray-300 rounded-lg transition group text-left">
-                    <div class="w-8 h-8 rounded bg-slate-100 text-slate-600 flex items-center justify-center"><i data-lucide="box" size="16"></i></div>
-                    <div class="flex-1">
-                        <div class="text-xs font-bold text-gray-700 group-hover:text-slate-700">Zone Libre</div>
-                        <div class="text-[10px] text-gray-400">Custom</div>
-                    </div>
-                </button>
-            </div>
-        </div>
-
-        <!-- Exterior Elements -->
-        <div class="glass-panel p-3 rounded-xl flex-1 overflow-y-auto">
-            <span class="text-xs font-bold text-gray-400 uppercase block mb-2">Zone extérieure</span>
-            <div class="grid grid-cols-2 gap-2">
-                <button onclick="app.createExterior('pelouse')" class="flex items-center gap-2 p-2 bg-white border border-green-200 rounded-lg hover:border-green-400 transition text-left">
-                    <div class="w-8 h-8 rounded bg-green-100 text-green-700 flex items-center justify-center"><i data-lucide="sprout" size="16"></i></div>
-                    <div class="flex-1">
-                        <div class="text-xs font-bold text-gray-700">Pelouse</div>
-                        <div class="text-[10px] text-gray-400">Surface herbeuse</div>
-                    </div>
-                </button>
-                <button onclick="app.createExterior('arbre')" class="flex items-center gap-2 p-2 bg-white border border-emerald-200 rounded-lg hover:border-emerald-400 transition text-left">
-                    <div class="w-8 h-8 rounded bg-emerald-100 text-emerald-700 flex items-center justify-center"><i data-lucide="trees" size="16"></i></div>
-                    <div class="flex-1">
-                        <div class="text-xs font-bold text-gray-700">Arbre</div>
-                        <div class="text-[10px] text-gray-400">Volume vertical</div>
-                    </div>
-                </button>
-                <button onclick="app.createExterior('buisson')" class="flex items-center gap-2 p-2 bg-white border border-lime-200 rounded-lg hover:border-lime-400 transition text-left">
-                    <div class="w-8 h-8 rounded bg-lime-100 text-lime-700 flex items-center justify-center"><i data-lucide="leaf" size="16"></i></div>
-                    <div class="flex-1">
-                        <div class="text-xs font-bold text-gray-700">Buisson</div>
-                        <div class="text-[10px] text-gray-400">Masse basse</div>
-                    </div>
-                </button>
-                <button onclick="app.createExterior('haie')" class="flex items-center gap-2 p-2 bg-white border border-emerald-200 rounded-lg hover:border-emerald-400 transition text-left">
-                    <div class="w-8 h-8 rounded bg-emerald-50 text-emerald-700 flex items-center justify-center"><i data-lucide="wall" size="16"></i></div>
-                    <div class="flex-1">
-                        <div class="text-xs font-bold text-gray-700">Haie</div>
-                        <div class="text-[10px] text-gray-400">Séparation végétale</div>
-                    </div>
-                </button>
-                <button onclick="app.createExterior('portail')" class="flex items-center gap-2 p-2 bg-white border border-slate-200 rounded-lg hover:border-slate-400 transition text-left">
-                    <div class="w-8 h-8 rounded bg-slate-100 text-slate-700 flex items-center justify-center"><i data-lucide="door-open" size="16"></i></div>
-                    <div class="flex-1">
-                        <div class="text-xs font-bold text-gray-700">Portail</div>
-                        <div class="text-[10px] text-gray-400">Accès extérieur</div>
-                    </div>
-                </button>
-                <button onclick="app.createExterior('poubelle')" class="flex items-center gap-2 p-2 bg-white border border-slate-200 rounded-lg hover:border-slate-400 transition text-left">
-                    <div class="w-8 h-8 rounded bg-slate-100 text-slate-700 flex items-center justify-center"><i data-lucide="trash-2" size="16"></i></div>
-                    <div class="flex-1">
-                        <div class="text-xs font-bold text-gray-700">Poubelle</div>
-                        <div class="text-[10px] text-gray-400">Gestion déchets</div>
-                    </div>
-                </button>
-                <button onclick="app.createExterior('grillage')" class="flex items-center gap-2 p-2 bg-white border border-blue-200 rounded-lg hover:border-blue-400 transition text-left">
-                    <div class="w-8 h-8 rounded bg-blue-50 text-blue-700 flex items-center justify-center"><i data-lucide="grid" size="16"></i></div>
-                    <div class="flex-1">
-                        <div class="text-xs font-bold text-gray-700">Grillage</div>
-                        <div class="text-[10px] text-gray-400">Clôture légère</div>
-                    </div>
-                </button>
-                <button onclick="app.createExterior('parking')" class="flex items-center gap-2 p-2 bg-white border border-amber-200 rounded-lg hover:border-amber-400 transition text-left">
-                    <div class="w-8 h-8 rounded bg-amber-50 text-amber-700 flex items-center justify-center"><i data-lucide="car" size="16"></i></div>
-                    <div class="flex-1">
-                        <div class="text-xs font-bold text-gray-700">Parking</div>
-                        <div class="text-[10px] text-gray-400">Stationnement</div>
-                    </div>
-                </button>
-            </div>
-        </div>
-
-        <!-- Statistics -->
+        <!-- Creation Tabs -->
         <div class="glass-panel p-3 rounded-xl">
-            <span class="text-xs font-bold text-gray-400 uppercase block mb-2">Statistiques Projet</span>
-            <div class="grid grid-cols-2 gap-2 text-center">
-                <div class="bg-white/50 rounded p-1 border border-gray-100">
-                    <div id="statRooms" class="text-sm font-bold text-gray-800">0</div>
-                    <div class="text-[10px] text-gray-500">Chambres</div>
+            <div class="grid grid-cols-3 gap-2 mb-3" id="builderTabs">
+                <button data-builder-tab="chambre" class="tab-pill active"><i data-lucide="bed-double" size="14"></i>Chambres</button>
+                <button data-builder-tab="construction" class="tab-pill"><i data-lucide="panels-top-left" size="14"></i>Construction</button>
+                <button data-builder-tab="exterieur" class="tab-pill"><i data-lucide="tree-palm" size="14"></i>Extérieur</button>
+            </div>
+
+            <div class="flex flex-col gap-3">
+                <!-- Panel Chambres -->
+                <div data-builder-panel="chambre" class="flex flex-col gap-3">
+                    <div class="subsection-card p-3 rounded-xl">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-bold text-gray-600 uppercase">Structures prêtes</span>
+                            <span class="chip">Modes pièce</span>
+                        </div>
+                        <div class="space-y-2 text-[11px] text-slate-600">
+                            <div class="grid grid-cols-2 gap-2">
+                                <button onclick="app.createPresetSpace('cuisine','petite')" class="p-2 rounded-lg bg-white border border-gray-200 hover:border-sky-400 transition flex items-start gap-2">
+                                    <div class="w-8 h-8 rounded bg-orange-100 text-orange-600 flex items-center justify-center"><i data-lucide="chef-hat" size="16"></i></div>
+                                    <div class="text-left flex-1"><div class="font-bold text-gray-700">Cuisine</div><div class="text-[10px] text-gray-500">Petite · pack complet</div></div>
+                                </button>
+                                <button onclick="app.createPresetSpace('cuisine','grande')" class="p-2 rounded-lg bg-white border border-gray-200 hover:border-sky-400 transition flex items-start gap-2">
+                                    <div class="w-8 h-8 rounded bg-orange-100 text-orange-600 flex items-center justify-center"><i data-lucide="chef-hat" size="16"></i></div>
+                                    <div class="text-left flex-1"><div class="font-bold text-gray-700">Cuisine</div><div class="text-[10px] text-gray-500">Grande · îlot & électroménager</div></div>
+                                </button>
+                                <button onclick="app.createPresetSpace('bain','moyenne')" class="p-2 rounded-lg bg-white border border-gray-200 hover:border-cyan-400 transition flex items-start gap-2">
+                                    <div class="w-8 h-8 rounded bg-cyan-100 text-cyan-600 flex items-center justify-center"><i data-lucide="shower-head" size="16"></i></div>
+                                    <div class="text-left flex-1"><div class="font-bold text-gray-700">Salle de bain</div><div class="text-[10px] text-gray-500">Douche, WC, évier</div></div>
+                                </button>
+                                <button onclick="app.createPresetSpace('buanderie','moyenne')" class="p-2 rounded-lg bg-white border border-gray-200 hover:border-emerald-400 transition flex items-start gap-2">
+                                    <div class="w-8 h-8 rounded bg-emerald-100 text-emerald-600 flex items-center justify-center"><i data-lucide="washing-machine" size="16"></i></div>
+                                    <div class="text-left flex-1"><div class="font-bold text-gray-700">Buanderie</div><div class="text-[10px] text-gray-500">Lave-linge + sèche-linge</div></div>
+                                </button>
+                                <button onclick="app.createPresetSpace('atelier','grande')" class="p-2 rounded-lg bg-white border border-gray-200 hover:border-amber-400 transition flex items-start gap-2">
+                                    <div class="w-8 h-8 rounded bg-amber-100 text-amber-600 flex items-center justify-center"><i data-lucide="hammer" size="16"></i></div>
+                                    <div class="text-left flex-1"><div class="font-bold text-gray-700">Atelier</div><div class="text-[10px] text-gray-500">Etabli & rangements</div></div>
+                                </button>
+                                <button onclick="app.createPresetSpace('bureau','moyenne')" class="p-2 rounded-lg bg-white border border-gray-200 hover:border-indigo-400 transition flex items-start gap-2">
+                                    <div class="w-8 h-8 rounded bg-indigo-100 text-indigo-600 flex items-center justify-center"><i data-lucide="briefcase" size="16"></i></div>
+                                    <div class="text-left flex-1"><div class="font-bold text-gray-700">Bureau</div><div class="text-[10px] text-gray-500">Plan de travail + sièges</div></div>
+                                </button>
+                                <button onclick="app.createPresetSpace('reserve','moyenne')" class="p-2 rounded-lg bg-white border border-gray-200 hover:border-lime-400 transition flex items-start gap-2">
+                                    <div class="w-8 h-8 rounded bg-lime-100 text-lime-600 flex items-center justify-center"><i data-lucide="archive" size="16"></i></div>
+                                    <div class="text-left flex-1"><div class="font-bold text-gray-700">Réserve</div><div class="text-[10px] text-gray-500">Racks & stockage</div></div>
+                                </button>
+                                <button onclick="app.createPresetSpace('lingerie','petite')" class="p-2 rounded-lg bg-white border border-gray-200 hover:border-pink-400 transition flex items-start gap-2">
+                                    <div class="w-8 h-8 rounded bg-pink-100 text-pink-600 flex items-center justify-center"><i data-lucide="hanger" size="16"></i></div>
+                                    <div class="text-left flex-1"><div class="font-bold text-gray-700">Lingerie</div><div class="text-[10px] text-gray-500">Armoire, penderie</div></div>
+                                </button>
+                                <button onclick="app.createPresetSpace('reunion','grande')" class="p-2 rounded-lg bg-white border border-gray-200 hover:border-purple-400 transition flex items-start gap-2">
+                                    <div class="w-8 h-8 rounded bg-purple-100 text-purple-600 flex items-center justify-center"><i data-lucide="presentation" size="16"></i></div>
+                                    <div class="text-left flex-1"><div class="font-bold text-gray-700">Réunion</div><div class="text-[10px] text-gray-500">Grande table + écrans</div></div>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="subsection-card p-3 rounded-xl">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-bold text-gray-600 uppercase">Bibliothèque</span>
+                            <span class="chip">Plans rapides</span>
+                        </div>
+                        <div class="space-y-2">
+                            <button onclick="app.createBlock('room')" class="w-full flex items-center gap-3 p-2 bg-white hover:bg-blue-50 border border-gray-200 hover:border-blue-300 rounded-lg transition group text-left">
+                                <div class="w-8 h-8 rounded bg-indigo-100 text-indigo-600 flex items-center justify-center"><i data-lucide="bed-double" size="16"></i></div>
+                                <div class="flex-1">
+                                    <div class="text-xs font-bold text-gray-700 group-hover:text-blue-700">Chambre Complète</div>
+                                    <div class="text-[10px] text-gray-400">Avec Fenêtre & Porte</div>
+                                </div>
+                            </button>
+                            <button onclick="app.createPresetSpace('bain','petite')" class="w-full flex items-center gap-3 p-2 bg-white hover:bg-cyan-50 border border-gray-200 hover:border-cyan-300 rounded-lg transition group text-left">
+                                <div class="w-8 h-8 rounded bg-cyan-100 text-cyan-600 flex items-center justify-center"><i data-lucide="sparkle" size="16"></i></div>
+                                <div class="flex-1">
+                                    <div class="text-xs font-bold text-gray-700 group-hover:text-cyan-700">Salle d'eau compacte</div>
+                                    <div class="text-[10px] text-gray-400">WC + Douche + vasque</div>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="subsection-card p-3 rounded-xl">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-bold text-gray-600 uppercase">Statistiques</span>
+                            <span class="chip">Temps réel</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 text-center">
+                            <div class="bg-white/60 rounded p-2 border border-gray-100">
+                                <div id="statRooms" class="text-sm font-bold text-gray-800">0</div>
+                                <div class="text-[10px] text-gray-500">Chambres</div>
+                            </div>
+                            <div class="bg-white/60 rounded p-2 border border-gray-100">
+                                <div id="statArea" class="text-sm font-bold text-gray-800">0 m²</div>
+                                <div class="text-[10px] text-gray-500">Surface</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="bg-white/50 rounded p-1 border border-gray-100">
-                    <div id="statArea" class="text-sm font-bold text-gray-800">0 m²</div>
-                    <div class="text-[10px] text-gray-500">Surface</div>
+
+                <!-- Panel Construction -->
+                <div data-builder-panel="construction" class="flex flex-col gap-3 hidden">
+                    <div class="subsection-card p-3 rounded-xl">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-bold text-gray-600 uppercase">Circulation & volume</span>
+                            <span class="chip">Corridors</span>
+                        </div>
+                        <div class="space-y-2">
+                            <button onclick="app.createBlock('corridor')" class="w-full flex items-center gap-3 p-2 bg-white hover:bg-teal-50 border border-gray-200 hover:border-teal-300 rounded-lg transition group text-left">
+                                <div class="w-8 h-8 rounded bg-teal-100 text-teal-600 flex items-center justify-center"><i data-lucide="arrow-up-down" size="16"></i></div>
+                                <div class="flex-1">
+                                    <div class="text-xs font-bold text-gray-700 group-hover:text-teal-700">Couloir</div>
+                                    <div class="text-[10px] text-gray-400">Largeur guidée</div>
+                                </div>
+                            </button>
+                            <button onclick="app.createBlock('stairs')" class="w-full flex items-center gap-3 p-2 bg-white hover:bg-orange-50 border border-gray-200 hover:border-orange-300 rounded-lg transition group text-left">
+                                <div class="w-8 h-8 rounded bg-orange-100 text-orange-600 flex items-center justify-center"><i data-lucide="move-up-right" size="16"></i></div>
+                                <div class="flex-1">
+                                    <div class="text-xs font-bold text-gray-700 group-hover:text-orange-700">Escalier</div>
+                                    <div class="text-[10px] text-gray-400">Liaison étage</div>
+                                </div>
+                            </button>
+                            <button onclick="app.createBlock('generic')" class="w-full flex items-center gap-3 p-2 bg-white hover:bg-gray-50 border border-gray-200 hover:border-gray-300 rounded-lg transition group text-left">
+                                <div class="w-8 h-8 rounded bg-slate-100 text-slate-600 flex items-center justify-center"><i data-lucide="box" size="16"></i></div>
+                                <div class="flex-1">
+                                    <div class="text-xs font-bold text-gray-700 group-hover:text-slate-700">Zone libre</div>
+                                    <div class="text-[10px] text-gray-400">Volumes personnalisés</div>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="subsection-card p-3 rounded-xl">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-bold text-gray-600 uppercase">Structures complètes</span>
+                            <span class="chip">3 tailles</span>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 text-[11px]">
+                            <button onclick="app.createApartment('petite')" class="p-2 bg-white border border-gray-200 rounded-lg hover:border-sky-400 transition flex flex-col items-center gap-1">
+                                <i data-lucide="building-2" size="16" class="text-sky-600"></i>
+                                <span class="font-semibold text-gray-700">Appartement S</span>
+                                <span class="text-[10px] text-gray-500 text-center">3 pièces côte à côte</span>
+                            </button>
+                            <button onclick="app.createApartment('moyenne')" class="p-2 bg-white border border-gray-200 rounded-lg hover:border-sky-400 transition flex flex-col items-center gap-1">
+                                <i data-lucide="buildings" size="16" class="text-sky-600"></i>
+                                <span class="font-semibold text-gray-700">Appartement M</span>
+                                <span class="text-[10px] text-gray-500 text-center">Optimisé pour 3 chambres</span>
+                            </button>
+                            <button onclick="app.createApartment('grande')" class="p-2 bg-white border border-gray-200 rounded-lg hover:border-sky-400 transition flex flex-col items-center gap-1">
+                                <i data-lucide="home" size="16" class="text-sky-600"></i>
+                                <span class="font-semibold text-gray-700">Appartement L</span>
+                                <span class="text-[10px] text-gray-500 text-center">Avec cloisonnement intérieur</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panel Extérieur -->
+                <div data-builder-panel="exterieur" class="flex flex-col gap-3 hidden">
+                    <div class="subsection-card p-3 rounded-xl">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-bold text-gray-600 uppercase">Zone extérieure</span>
+                            <span class="chip">Paysage</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="app.createExterior('pelouse')" class="flex items-center gap-2 p-2 bg-white border border-green-200 rounded-lg hover:border-green-400 transition text-left">
+                                <div class="w-8 h-8 rounded bg-green-100 text-green-700 flex items-center justify-center"><i data-lucide="sprout" size="16"></i></div>
+                                <div class="flex-1">
+                                    <div class="text-xs font-bold text-gray-700">Pelouse</div>
+                                    <div class="text-[10px] text-gray-400">Surface herbeuse</div>
+                                </div>
+                            </button>
+                            <button onclick="app.createExterior('arbre')" class="flex items-center gap-2 p-2 bg-white border border-emerald-200 rounded-lg hover:border-emerald-400 transition text-left">
+                                <div class="w-8 h-8 rounded bg-emerald-100 text-emerald-700 flex items-center justify-center"><i data-lucide="trees" size="16"></i></div>
+                                <div class="flex-1">
+                                    <div class="text-xs font-bold text-gray-700">Arbre</div>
+                                    <div class="text-[10px] text-gray-400">Volume vertical</div>
+                                </div>
+                            </button>
+                            <button onclick="app.createExterior('buisson')" class="flex items-center gap-2 p-2 bg-white border border-lime-200 rounded-lg hover:border-lime-400 transition text-left">
+                                <div class="w-8 h-8 rounded bg-lime-100 text-lime-700 flex items-center justify-center"><i data-lucide="leaf" size="16"></i></div>
+                                <div class="flex-1">
+                                    <div class="text-xs font-bold text-gray-700">Buisson</div>
+                                    <div class="text-[10px] text-gray-400">Masse basse</div>
+                                </div>
+                            </button>
+                            <button onclick="app.createExterior('haie')" class="flex items-center gap-2 p-2 bg-white border border-emerald-200 rounded-lg hover:border-emerald-400 transition text-left">
+                                <div class="w-8 h-8 rounded bg-emerald-50 text-emerald-700 flex items-center justify-center"><i data-lucide="wall" size="16"></i></div>
+                                <div class="flex-1">
+                                    <div class="text-xs font-bold text-gray-700">Haie</div>
+                                    <div class="text-[10px] text-gray-400">Séparation végétale</div>
+                                </div>
+                            </button>
+                            <button onclick="app.createExterior('portail')" class="flex items-center gap-2 p-2 bg-white border border-slate-200 rounded-lg hover:border-slate-400 transition text-left">
+                                <div class="w-8 h-8 rounded bg-slate-100 text-slate-700 flex items-center justify-center"><i data-lucide="door-open" size="16"></i></div>
+                                <div class="flex-1">
+                                    <div class="text-xs font-bold text-gray-700">Portail</div>
+                                    <div class="text-[10px] text-gray-400">Accès extérieur</div>
+                                </div>
+                            </button>
+                            <button onclick="app.createExterior('poubelle')" class="flex items-center gap-2 p-2 bg-white border border-slate-200 rounded-lg hover:border-slate-400 transition text-left">
+                                <div class="w-8 h-8 rounded bg-slate-100 text-slate-700 flex items-center justify-center"><i data-lucide="trash-2" size="16"></i></div>
+                                <div class="flex-1">
+                                    <div class="text-xs font-bold text-gray-700">Poubelle</div>
+                                    <div class="text-[10px] text-gray-400">Gestion déchets</div>
+                                </div>
+                            </button>
+                            <button onclick="app.createExterior('grillage')" class="flex items-center gap-2 p-2 bg-white border border-blue-200 rounded-lg hover:border-blue-400 transition text-left">
+                                <div class="w-8 h-8 rounded bg-blue-50 text-blue-700 flex items-center justify-center"><i data-lucide="grid" size="16"></i></div>
+                                <div class="flex-1">
+                                    <div class="text-xs font-bold text-gray-700">Grillage</div>
+                                    <div class="text-[10px] text-gray-400">Clôture légère</div>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="subsection-card p-3 rounded-xl">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-bold text-gray-600 uppercase">Structures extérieures complètes</span>
+                            <span class="chip">3 tailles</span>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 text-[11px]">
+                            <button onclick="app.createExteriorPreset('terrasse','petite')" class="p-2 bg-white border border-amber-200 rounded-lg hover:border-amber-400 transition flex flex-col items-center gap-1">
+                                <i data-lucide="sun" size="16" class="text-amber-600"></i>
+                                <span class="font-semibold text-gray-700">Terrasse S</span>
+                                <span class="text-[10px] text-gray-500 text-center">Bois + végétaux</span>
+                            </button>
+                            <button onclick="app.createExteriorPreset('terrasse','moyenne')" class="p-2 bg-white border border-amber-200 rounded-lg hover:border-amber-400 transition flex flex-col items-center gap-1">
+                                <i data-lucide="sun" size="16" class="text-amber-600"></i>
+                                <span class="font-semibold text-gray-700">Terrasse M</span>
+                                <span class="text-[10px] text-gray-500 text-center">Avec éclairage</span>
+                            </button>
+                            <button onclick="app.createExteriorPreset('terrasse','grande')" class="p-2 bg-white border border-amber-200 rounded-lg hover:border-amber-400 transition flex flex-col items-center gap-1">
+                                <i data-lucide="sun" size="16" class="text-amber-600"></i>
+                                <span class="font-semibold text-gray-700">Terrasse L</span>
+                                <span class="text-[10px] text-gray-500 text-center">Zone lounge complète</span>
+                            </button>
+                            <button onclick="app.createExteriorPreset('parking','petite')" class="p-2 bg-white border border-slate-200 rounded-lg hover:border-slate-400 transition flex flex-col items-center gap-1">
+                                <i data-lucide="car" size="16" class="text-slate-700"></i>
+                                <span class="font-semibold text-gray-700">Place parking S</span>
+                                <span class="text-[10px] text-gray-500 text-center">Une place</span>
+                            </button>
+                            <button onclick="app.createExteriorPreset('parking','moyenne')" class="p-2 bg-white border border-slate-200 rounded-lg hover:border-slate-400 transition flex flex-col items-center gap-1">
+                                <i data-lucide="car" size="16" class="text-slate-700"></i>
+                                <span class="font-semibold text-gray-700">Place parking M</span>
+                                <span class="text-[10px] text-gray-500 text-center">Marquage double</span>
+                            </button>
+                            <button onclick="app.createExteriorPreset('parking','grande')" class="p-2 bg-white border border-slate-200 rounded-lg hover:border-slate-400 transition flex flex-col items-center gap-1">
+                                <i data-lucide="car" size="16" class="text-slate-700"></i>
+                                <span class="font-semibold text-gray-700">Place parking L</span>
+                                <span class="text-[10px] text-gray-500 text-center">Allée + zone</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -327,192 +512,208 @@
 
     <!-- RIGHT PANEL: Properties & Settings -->
     <div class="absolute top-4 right-4 w-80 flex flex-col gap-3 z-10 max-h-[95vh] overflow-y-auto pr-1">
-
-        <!-- View Settings -->
-        <div class="glass-panel p-3 rounded-xl flex flex-col gap-3">
-            <div class="flex items-center justify-between">
-                <span class="panel-title text-xs font-extrabold">Vue et navigation</span>
-                <span class="badge bg-sky-50 text-sky-700 border border-sky-100"><i data-lucide="compass" size="14"></i>Caméra</span>
-            </div>
-            <div class="flex gap-1">
-            <button id="viewFloor" class="flex-1 py-2 text-xs font-bold rounded-lg transition flex items-center justify-center gap-2 btn-tool active">
-                <i data-lucide="layers" size="14"></i> Étage
-            </button>
-            <button id="viewGlobal" class="flex-1 py-2 text-xs font-bold rounded-lg transition flex items-center justify-center gap-2 btn-tool bg-white/50 hover:bg-white">
-                <i data-lucide="box-select" size="14"></i> Global
-            </button>
-            </div>
-            <div class="grid grid-cols-2 gap-2 text-[11px] text-slate-500">
-                <div class="soft-card rounded-lg p-2 flex items-center gap-2"><i data-lucide="eye" size="14"></i><span id="viewHint">Exploration étage en cours</span></div>
-                <div class="soft-card rounded-lg p-2 flex items-center gap-2"><i data-lucide="ruler" size="14"></i><span>Nappes alignées sur la grille 0.5m</span></div>
-            </div>
-        </div>
-
-        <!-- Tools Mode -->
         <div class="glass-panel p-3 rounded-xl">
-            <div class="flex gap-1 bg-gray-100/50 p-1 rounded-lg">
-                <button id="toolTranslate" class="flex-1 py-1.5 rounded text-gray-600 hover:bg-white shadow-sm transition flex justify-center" title="Déplacer (W)">
-                    <i data-lucide="move" size="16"></i>
-                </button>
-                <button id="toolRotate" class="flex-1 py-1.5 rounded text-gray-600 hover:bg-white shadow-sm transition flex justify-center" title="Pivoter (E)">
-                    <i data-lucide="rotate-cw" size="16"></i>
-                </button>
-                <button id="toolScale" class="flex-1 py-1.5 rounded text-gray-600 hover:bg-white shadow-sm transition flex justify-center" title="Redimensionner (R)">
-                    <i data-lucide="maximize" size="16"></i>
-                </button>
-            </div>
-            <div class="mt-2 grid grid-cols-3 gap-1 text-[10px] text-slate-500">
-                <div class="soft-card rounded p-2 flex items-center gap-1"><i data-lucide="wand-2" size="12"></i><span>Aligner</span></div>
-                <div class="soft-card rounded p-2 flex items-center gap-1"><i data-lucide="sprout" size="12"></i><span>Snapping</span></div>
-                <div class="soft-card rounded p-2 flex items-center gap-1"><i data-lucide="shield" size="12"></i><span>Confort</span></div>
+            <div class="grid grid-cols-4 gap-2" id="inspectorTabs">
+                <button data-inspector-tab="essentiel" class="tab-pill active"><i data-lucide="navigation" size="14"></i>Essentiel</button>
+                <button data-inspector-tab="apparence" class="tab-pill"><i data-lucide="sparkle" size="14"></i>Apparence</button>
+                <button data-inspector-tab="objets" class="tab-pill"><i data-lucide="package" size="14"></i>Objets</button>
+                <button data-inspector-tab="fichier" class="tab-pill"><i data-lucide="save" size="14"></i>Fichier</button>
             </div>
         </div>
 
-        <!-- Selection Properties (Conditional) -->
-        <div id="propPanel" class="glass-panel p-4 rounded-xl transition-all duration-300 opacity-50 pointer-events-none scale-95 origin-top">
-            <div class="flex justify-between items-start mb-3">
-                <h2 id="propTitle" class="text-xs font-bold text-blue-600 uppercase tracking-wide">Propriétés</h2>
-                <button id="deleteBtn" class="text-red-400 hover:text-red-600 transition" title="Supprimer"><i data-lucide="trash-2" size="16"></i></button>
-            </div>
-
-            <div class="grid grid-cols-2 gap-2 mb-4 text-[11px] text-slate-600">
-                <div class="soft-card rounded-lg p-2 flex flex-col gap-1">
-                    <span class="subtle-label">Cible active</span>
-                    <span id="colorTargetBadge" class="badge bg-indigo-50 text-indigo-700 border border-indigo-100"><i data-lucide="paint-bucket" size="14"></i>Murs</span>
+        <div data-inspector-panel="essentiel" class="flex flex-col gap-3">
+            <!-- View Settings -->
+            <div class="glass-panel p-3 rounded-xl flex flex-col gap-3">
+                <div class="flex items-center justify-between">
+                    <span class="panel-title text-xs font-extrabold">Vue et navigation</span>
+                    <span class="badge bg-sky-50 text-sky-700 border border-sky-100"><i data-lucide="compass" size="14"></i>Caméra</span>
                 </div>
-                <div class="soft-card rounded-lg p-2 flex flex-col gap-1">
-                    <span class="subtle-label">Niveau</span>
-                    <span id="floorContextBadge" class="badge bg-emerald-50 text-emerald-700 border border-emerald-100"><i data-lucide="map-pin" size="14"></i>RDC</span>
-                </div>
-            </div>
-
-            <!-- Name Input -->
-            <div class="mb-4">
-                <label class="block text-[10px] font-bold text-gray-500 mb-1">IDENTIFIANT / NOM</label>
                 <div class="flex gap-1">
-                    <input type="text" id="propName" class="flex-1 bg-white border border-gray-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition">
-                    <button id="propNameBtn" class="px-2 bg-blue-50 text-blue-600 rounded border border-blue-100 hover:bg-blue-100"><i data-lucide="check" size="14"></i></button>
+                <button id="viewFloor" class="flex-1 py-2 text-xs font-bold rounded-lg transition flex items-center justify-center gap-2 btn-tool active">
+                    <i data-lucide="layers" size="14"></i> Étage
+                </button>
+                <button id="viewGlobal" class="flex-1 py-2 text-xs font-bold rounded-lg transition flex items-center justify-center gap-2 btn-tool bg-white/50 hover:bg-white">
+                    <i data-lucide="box-select" size="14"></i> Global
+                </button>
+                </div>
+                <div class="grid grid-cols-2 gap-2 text-[11px] text-slate-500">
+                    <div class="soft-card rounded-lg p-2 flex items-center gap-2"><i data-lucide="eye" size="14"></i><span id="viewHint">Exploration étage en cours</span></div>
+                    <div class="soft-card rounded-lg p-2 flex items-center gap-2"><i data-lucide="ruler" size="14"></i><span>Nappes alignées sur la grille 0.5m</span></div>
                 </div>
             </div>
 
-            <!-- Rotation Presets -->
-            <div id="rotationSection" class="mb-4">
-                <div class="flex items-center justify-between mb-2">
-                    <span class="block text-[10px] font-bold text-gray-500">ROTATIONS GUIDÉES</span>
-                    <div class="flex items-center gap-1">
-                        <label class="text-[10px] text-slate-500">Axe</label>
-                        <select id="rotationAxisSelect" class="text-xs border border-gray-200 rounded px-1 py-0.5 bg-white">
-                            <option value="y">Y</option>
-                            <option value="x">X</option>
-                            <option value="z">Z</option>
-                        </select>
-                        <label class="text-[10px] text-slate-500">Angle</label>
-                        <select id="rotationAngleSelect" class="text-xs border border-gray-200 rounded px-1 py-0.5 bg-white">
-                            <option value="15">15°</option>
-                            <option value="30">30°</option>
-                            <option value="45" selected>45°</option>
-                            <option value="90">90°</option>
-                            <option value="180">180°</option>
-                        </select>
+            <!-- Tools Mode -->
+            <div class="glass-panel p-3 rounded-xl">
+                <div class="flex gap-1 bg-gray-100/50 p-1 rounded-lg">
+                    <button id="toolTranslate" class="flex-1 py-1.5 rounded text-gray-600 hover:bg-white shadow-sm transition flex justify-center" title="Déplacer (W)">
+                        <i data-lucide="move" size="16"></i>
+                    </button>
+                    <button id="toolRotate" class="flex-1 py-1.5 rounded text-gray-600 hover:bg-white shadow-sm transition flex justify-center" title="Pivoter (E)">
+                        <i data-lucide="rotate-cw" size="16"></i>
+                    </button>
+                    <button id="toolScale" class="flex-1 py-1.5 rounded text-gray-600 hover:bg-white shadow-sm transition flex justify-center" title="Redimensionner (R)">
+                        <i data-lucide="maximize" size="16"></i>
+                    </button>
+                </div>
+                <div class="mt-2 grid grid-cols-3 gap-1 text-[10px] text-slate-500">
+                    <div class="soft-card rounded p-2 flex items-center gap-1"><i data-lucide="wand-2" size="12"></i><span>Aligner</span></div>
+                    <div class="soft-card rounded p-2 flex items-center gap-1"><i data-lucide="sprout" size="12"></i><span>Snapping</span></div>
+                    <div class="soft-card rounded p-2 flex items-center gap-1"><i data-lucide="shield" size="12"></i><span>Confort</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div data-inspector-panel="apparence" class="flex flex-col gap-3 hidden">
+            <!-- Selection Properties (Conditional) -->
+            <div id="propPanel" class="glass-panel p-4 rounded-xl transition-all duration-300 opacity-50 pointer-events-none scale-95 origin-top">
+                <div class="flex justify-between items-start mb-3">
+                    <div>
+                        <h2 id="propTitle" class="text-xs font-bold text-blue-600 uppercase tracking-wide">Propriétés</h2>
+                        <p class="text-[11px] text-slate-500">Nom, rotation guidée, couleurs et étiquettes.</p>
+                    </div>
+                    <button id="deleteBtn" class="text-red-400 hover:text-red-600 transition" title="Supprimer"><i data-lucide="trash-2" size="16"></i></button>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 mb-4 text-[11px] text-slate-600">
+                    <div class="soft-card rounded-lg p-2 flex flex-col gap-1">
+                        <span class="subtle-label">Cible active</span>
+                        <span id="colorTargetBadge" class="badge bg-indigo-50 text-indigo-700 border border-indigo-100"><i data-lucide="paint-bucket" size="14"></i>Murs</span>
+                    </div>
+                    <div class="soft-card rounded-lg p-2 flex flex-col gap-1">
+                        <span class="subtle-label">Niveau</span>
+                        <span id="floorContextBadge" class="badge bg-emerald-50 text-emerald-700 border border-emerald-100"><i data-lucide="map-pin" size="14"></i>RDC</span>
                     </div>
                 </div>
-                <div class="grid grid-cols-2 gap-2">
-                    <button id="rotateCounter" class="py-2 bg-white border border-gray-200 rounded text-xs font-bold text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2">
-                        <i data-lucide="rotate-ccw" size="14"></i>Rotation -
-                    </button>
-                    <button id="rotateClockwise" class="py-2 bg-white border border-gray-200 rounded text-xs font-bold text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2">
-                        <i data-lucide="rotate-cw" size="14"></i>Rotation +
-                    </button>
-                </div>
-            </div>
 
-            <!-- Color Picker (Hidden for furniture if needed) -->
-            <div id="colorSection" class="mb-4">
-                <div class="flex text-[10px] font-bold text-gray-500 mb-2 gap-2 bg-gray-50 p-1 rounded">
-                    <button id="targetBlock" class="flex-1 py-1 rounded text-center transition bg-white shadow-sm text-gray-800">Murs</button>
-                    <button id="targetLabel" class="flex-1 py-1 rounded text-center transition hover:bg-white text-gray-400">Étiquette</button>
-                </div>
-                <div id="colorGrid" class="grid grid-cols-6 gap-2">
-                    <!-- Generated via JS -->
-                </div>
-            </div>
-
-            <!-- Opacity Control -->
-            <div id="opacitySection" class="mb-4">
-                <div class="flex items-center justify-between mb-1">
-                    <span class="block text-[10px] font-bold text-gray-500">TRANSPARENCE</span>
-                    <span id="opacityValue" class="text-[10px] text-gray-500 font-semibold">100%</span>
-                </div>
-                <div id="opacityTargetGroup" class="flex text-[10px] font-bold text-gray-500 mb-2 gap-2 bg-gray-50 p-1 rounded hidden">
-                    <button id="opacityTargetWalls" class="flex-1 py-1 rounded text-center transition bg-white shadow-sm text-gray-800">Chambre</button>
-                    <button id="opacityTargetFurniture" class="flex-1 py-1 rounded text-center transition hover:bg-white text-gray-400">Objets</button>
-                </div>
-                <input id="opacityInput" type="range" min="0.05" max="1" step="0.05" value="1" class="w-full accent-blue-500">
-                <div class="text-[10px] text-slate-500 mt-1">Ajuste la visibilité de l'objet ou structure sélectionné(e).</div>
-            </div>
-
-            <!-- Wall Manager -->
-            <div id="wallSection" class="mb-4 space-y-2 hidden">
-                <div class="flex items-center justify-between">
-                    <label class="block text-[10px] font-bold text-gray-500">MURS DE LA CHAMBRE</label>
-                    <span class="text-[10px] text-gray-400">Ouverture guidée</span>
-                </div>
-                <div class="flex gap-2 items-center">
-                    <select id="wallSelector" class="flex-1 bg-white border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"></select>
-                    <button id="removeWallBtn" class="px-2 bg-red-50 text-red-600 border border-red-200 rounded text-xs font-bold hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed">Suppr.</button>
-                </div>
-                <p class="text-[10px] text-slate-500">Choisissez un mur de la chambre sélectionnée pour le retirer.</p>
-            </div>
-
-            <!-- Presets Size -->
-            <div id="sizeSection" class="mb-2">
-                 <label class="block text-[10px] font-bold text-gray-500 mb-1">TAILLE RAPIDE</label>
-                 <div class="flex gap-1">
-                     <button onclick="app.resizeSelection('S')" class="flex-1 py-1 bg-white border border-gray-200 rounded text-xs font-bold text-gray-600 hover:bg-gray-50">S</button>
-                     <button onclick="app.resizeSelection('M')" class="flex-1 py-1 bg-white border border-gray-200 rounded text-xs font-bold text-gray-600 hover:bg-gray-50">M</button>
-                     <button onclick="app.resizeSelection('L')" class="flex-1 py-1 bg-white border border-gray-200 rounded text-xs font-bold text-gray-600 hover:bg-gray-50">L</button>
-                 </div>
-            </div>
-
-            <!-- Label Controls -->
-            <div id="labelSection" class="mb-4 space-y-2">
-                <div class="flex items-center justify-between">
-                    <span class="block text-[10px] font-bold text-gray-500">ÉTIQUETTE</span>
+                <!-- Name Input -->
+                <div class="mb-4">
+                    <label class="block text-[10px] font-bold text-gray-500 mb-1">IDENTIFIANT / NOM</label>
                     <div class="flex gap-1">
-                        <button id="toggleDoorLabelBtn" class="px-2 py-1 bg-white border border-gray-200 rounded text-[10px] font-bold text-gray-600 hover:bg-gray-50">Porte</button>
-                        <button id="toggleLabelBtn" class="px-2 py-1 bg-white border border-gray-200 rounded text-[10px] font-bold text-gray-600 hover:bg-gray-50">Afficher</button>
-                        <button id="toggleAllLabelsBtn" class="px-2 py-1 bg-white border border-gray-200 rounded text-[10px] font-bold text-gray-600 hover:bg-gray-50">Tout</button>
+                        <input type="text" id="propName" class="flex-1 bg-white border border-gray-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition">
+                        <button id="propNameBtn" class="px-2 bg-blue-50 text-blue-600 rounded border border-blue-100 hover:bg-blue-100"><i data-lucide="check" size="14"></i></button>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-2 text-[10px] text-gray-600">
-                    <label class="flex flex-col bg-white border border-gray-200 rounded p-2 gap-1">
-                        Taille
-                        <input id="labelSizeInput" type="range" min="0.5" max="3" step="0.1" class="w-full accent-blue-500">
-                    </label>
-                    <label class="flex flex-col bg-white border border-gray-200 rounded p-2 gap-1">
-                        Couleur texte
-                        <input id="labelTextColorInput" type="color" class="w-full h-8 border border-gray-200 rounded" value="#ffffff">
-                    </label>
+                <!-- Rotation Presets -->
+                <div id="rotationSection" class="mb-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="block text-[10px] font-bold text-gray-500">ROTATIONS GUIDÉES</span>
+                        <div class="flex items-center gap-1">
+                            <label class="text-[10px] text-slate-500">Axe</label>
+                            <select id="rotationAxisSelect" class="text-xs border border-gray-200 rounded px-1 py-0.5 bg-white">
+                                <option value="y">Y</option>
+                                <option value="x">X</option>
+                                <option value="z">Z</option>
+                            </select>
+                            <label class="text-[10px] text-slate-500">Angle</label>
+                            <select id="rotationAngleSelect" class="text-xs border border-gray-200 rounded px-1 py-0.5 bg-white">
+                                <option value="15">15°</option>
+                                <option value="30">30°</option>
+                                <option value="45" selected>45°</option>
+                                <option value="90">90°</option>
+                                <option value="180">180°</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button id="rotateCounter" class="py-2 bg-white border border-gray-200 rounded text-xs font-bold text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2">
+                            <i data-lucide="rotate-ccw" size="14"></i>Rotation -
+                        </button>
+                        <button id="rotateClockwise" class="py-2 bg-white border border-gray-200 rounded text-xs font-bold text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2">
+                            <i data-lucide="rotate-cw" size="14"></i>Rotation +
+                        </button>
+                    </div>
                 </div>
-                <div class="grid grid-cols-3 gap-2 text-[10px] text-gray-600">
-                    <label class="flex flex-col bg-white border border-gray-200 rounded p-2 gap-1">
-                        X
-                        <input id="labelPosX" type="number" step="0.1" class="w-full text-xs border border-gray-200 rounded px-1 py-0.5" />
-                    </label>
-                    <label class="flex flex-col bg-white border border-gray-200 rounded p-2 gap-1">
-                        Y
-                        <input id="labelPosY" type="number" step="0.1" class="w-full text-xs border border-gray-200 rounded px-1 py-0.5" />
-                    </label>
-                    <label class="flex flex-col bg-white border border-gray-200 rounded p-2 gap-1">
-                        Z
-                        <input id="labelPosZ" type="number" step="0.1" class="w-full text-xs border border-gray-200 rounded px-1 py-0.5" />
-                    </label>
+
+                <!-- Color Picker (Hidden for furniture if needed) -->
+                <div id="colorSection" class="mb-4">
+                    <div class="flex text-[10px] font-bold text-gray-500 mb-2 gap-2 bg-gray-50 p-1 rounded">
+                        <button id="targetBlock" class="flex-1 py-1 rounded text-center transition bg-white shadow-sm text-gray-800">Murs</button>
+                        <button id="targetLabel" class="flex-1 py-1 rounded text-center transition hover:bg-white text-gray-400">Étiquette</button>
+                    </div>
+                    <div id="colorGrid" class="grid grid-cols-6 gap-2">
+                        <!-- Generated via JS -->
+                    </div>
+                </div>
+
+                <!-- Opacity Control -->
+                <div id="opacitySection" class="mb-4">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="block text-[10px] font-bold text-gray-500">TRANSPARENCE</span>
+                        <span id="opacityValue" class="text-[10px] text-gray-500 font-semibold">100%</span>
+                    </div>
+                    <div id="opacityTargetGroup" class="flex text-[10px] font-bold text-gray-500 mb-2 gap-2 bg-gray-50 p-1 rounded hidden">
+                        <button id="opacityTargetWalls" class="flex-1 py-1 rounded text-center transition bg-white shadow-sm text-gray-800">Chambre</button>
+                        <button id="opacityTargetFurniture" class="flex-1 py-1 rounded text-center transition hover:bg-white text-gray-400">Objets</button>
+                    </div>
+                    <input id="opacityInput" type="range" min="0.05" max="1" step="0.05" value="1" class="w-full accent-blue-500">
+                    <div class="text-[10px] text-slate-500 mt-1">Ajuste la visibilité de l'objet ou structure sélectionné(e).</div>
+                </div>
+
+                <!-- Wall Manager -->
+                <div id="wallSection" class="mb-4 space-y-2 hidden">
+                    <div class="flex items-center justify-between">
+                        <label class="block text-[10px] font-bold text-gray-500">MURS DE LA CHAMBRE</label>
+                        <span class="text-[10px] text-gray-400">Ouverture guidée</span>
+                    </div>
+                    <div class="flex gap-2 items-center">
+                        <select id="wallSelector" class="flex-1 bg-white border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"></select>
+                        <button id="removeWallBtn" class="px-2 bg-red-50 text-red-600 border border-red-200 rounded text-xs font-bold hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed">Suppr.</button>
+                    </div>
+                    <p class="text-[10px] text-slate-500">Choisissez un mur de la chambre sélectionnée pour le retirer.</p>
+                </div>
+
+                <!-- Presets Size -->
+                <div id="sizeSection" class="mb-2">
+                     <label class="block text-[10px] font-bold text-gray-500 mb-1">TAILLE RAPIDE</label>
+                     <div class="flex gap-1">
+                         <button onclick="app.resizeSelection('S')" class="flex-1 py-1 bg-white border border-gray-200 rounded text-xs font-bold text-gray-600 hover:bg-gray-50">S</button>
+                         <button onclick="app.resizeSelection('M')" class="flex-1 py-1 bg-white border border-gray-200 rounded text-xs font-bold text-gray-600 hover:bg-gray-50">M</button>
+                         <button onclick="app.resizeSelection('L')" class="flex-1 py-1 bg-white border border-gray-200 rounded text-xs font-bold text-gray-600 hover:bg-gray-50">L</button>
+                     </div>
+                </div>
+
+                <!-- Label Controls -->
+                <div id="labelSection" class="mb-4 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="block text-[10px] font-bold text-gray-500">ÉTIQUETTE</span>
+                        <div class="flex gap-1">
+                            <button id="toggleDoorLabelBtn" class="px-2 py-1 bg-white border border-gray-200 rounded text-[10px] font-bold text-gray-600 hover:bg-gray-50">Porte</button>
+                            <button id="toggleLabelBtn" class="px-2 py-1 bg-white border border-gray-200 rounded text-[10px] font-bold text-gray-600 hover:bg-gray-50">Afficher</button>
+                            <button id="toggleAllLabelsBtn" class="px-2 py-1 bg-white border border-gray-200 rounded text-[10px] font-bold text-gray-600 hover:bg-gray-50">Tout</button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 text-[10px] text-gray-600">
+                        <label class="flex flex-col bg-white border border-gray-200 rounded p-2 gap-1">
+                            Taille
+                            <input id="labelSizeInput" type="range" min="0.5" max="3" step="0.1" class="w-full accent-blue-500">
+                        </label>
+                        <label class="flex flex-col bg-white border border-gray-200 rounded p-2 gap-1">
+                            Couleur texte
+                            <input id="labelTextColorInput" type="color" class="w-full h-8 border border-gray-200 rounded" value="#ffffff">
+                        </label>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 text-[10px] text-gray-600">
+                        <label class="flex flex-col bg-white border border-gray-200 rounded p-2 gap-1">
+                            X
+                            <input id="labelPosX" type="number" step="0.1" class="w-full text-xs border border-gray-200 rounded px-1 py-0.5" />
+                        </label>
+                        <label class="flex flex-col bg-white border border-gray-200 rounded p-2 gap-1">
+                            Y
+                            <input id="labelPosY" type="number" step="0.1" class="w-full text-xs border border-gray-200 rounded px-1 py-0.5" />
+                        </label>
+                        <label class="flex flex-col bg-white border border-gray-200 rounded p-2 gap-1">
+                            Z
+                            <input id="labelPosZ" type="number" step="0.1" class="w-full text-xs border border-gray-200 rounded px-1 py-0.5" />
+                        </label>
+                    </div>
                 </div>
             </div>
+        </div>
 
-            <!-- Furniture Transform Controls -->
-            <div id="furnitureTransformSection" class="mb-3 space-y-2 hidden">
+        <div data-inspector-panel="objets" class="flex flex-col gap-3 hidden">
+            <div id="furnitureTransformSection" class="glass-panel p-3 rounded-xl mb-1 space-y-2 hidden">
                 <label class="block text-[10px] font-bold text-gray-500">DIMENSIONS MOBILIER</label>
                 <div class="grid grid-cols-3 gap-2 text-[10px] text-gray-600">
                     <label class="flex flex-col bg-white border border-gray-200 rounded p-2 gap-1">Largeur
@@ -530,9 +731,11 @@
                 </label>
             </div>
 
-            <!-- Furniture Manager -->
-              <div id="furnitureSection" class="mb-3 space-y-2">
-                  <label class="block text-[10px] font-bold text-gray-500">OBJETS DE LA CHAMBRE</label>
+            <div id="furnitureSection" class="glass-panel p-3 rounded-xl space-y-2">
+                  <div class="flex items-center justify-between">
+                      <label class="block text-[10px] font-bold text-gray-500">OBJETS DE LA CHAMBRE</label>
+                      <span class="chip">Bibliothèque étendue</span>
+                  </div>
                   <div class="flex gap-2">
                       <select id="furnitureSelector" class="flex-1 bg-white border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
                           <!-- options via JS -->
@@ -540,9 +743,9 @@
                     <button id="addFurnitureBtn" class="px-2 bg-blue-600 text-white rounded text-xs font-bold hover:bg-blue-700">Ajouter</button>
                     <button id="removeFurnitureBtn" class="px-2 bg-red-50 text-red-600 border border-red-200 rounded text-xs font-bold hover:bg-red-100">Suppr.</button>
                   </div>
-              </div>
+            </div>
 
-              <div class="mb-3 space-y-2">
+            <div class="glass-panel p-3 rounded-xl space-y-2">
                   <div class="flex items-center justify-between">
                       <label class="block text-[10px] font-bold text-gray-500">CÂBLAGE DISJONCTEURS</label>
                       <span class="badge bg-amber-50 text-amber-700 border border-amber-100"><i data-lucide="zap" size="14"></i>Flux</span>
@@ -550,23 +753,22 @@
                   <button id="toggleCablesBtn" class="w-full py-2 bg-white border border-gray-200 rounded text-xs font-bold text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2">
                       <i data-lucide="eye" size="14"></i>Masquer le câblage
                   </button>
-              </div>
-
-              <div id="breakerSection" class="mb-3 space-y-2 hidden">
-                  <div class="flex items-center justify-between">
-                      <span class="block text-[10px] font-bold text-gray-500">BOÎTIER DISJONCTEURS</span>
-                      <span class="text-[10px] text-emerald-600 font-semibold flex items-center gap-1"><i data-lucide="circuit-board" size="14"></i>Chambres alimentées</span>
-                  </div>
-                  <div class="bg-white border border-gray-200 rounded-lg p-2 space-y-2 text-[10px] text-gray-700">
+                  <div id="breakerSection" class="space-y-2 hidden">
                       <div class="flex items-center justify-between">
-                          <span class="text-gray-500">Sélectionner les chambres</span>
-                          <button id="breakerSelectAll" class="px-2 py-1 bg-emerald-50 text-emerald-700 border border-emerald-100 rounded hover:bg-emerald-100">Tout</button>
+                          <span class="block text-[10px] font-bold text-gray-500">BOÎTIER DISJONCTEURS</span>
+                          <span class="text-[10px] text-emerald-600 font-semibold flex items-center gap-1"><i data-lucide="circuit-board" size="14"></i>Chambres alimentées</span>
                       </div>
-                      <div id="breakerRoomsList" class="max-h-32 overflow-y-auto space-y-1"></div>
+                      <div class="bg-white border border-gray-200 rounded-lg p-2 space-y-2 text-[10px] text-gray-700">
+                          <div class="flex items-center justify-between">
+                              <span class="text-gray-500">Sélectionner les chambres</span>
+                              <button id="breakerSelectAll" class="px-2 py-1 bg-emerald-50 text-emerald-700 border border-emerald-100 rounded hover:bg-emerald-100">Tout</button>
+                          </div>
+                          <div id="breakerRoomsList" class="max-h-32 overflow-y-auto space-y-1"></div>
+                      </div>
                   </div>
-              </div>
+            </div>
 
-              <div class="mb-3 space-y-2">
+            <div class="glass-panel p-3 rounded-xl space-y-2">
                   <div class="flex items-center justify-between">
                       <label class="block text-[10px] font-bold text-gray-500">Dupliquer vers un étage</label>
                       <label class="flex items-center gap-1 text-[10px] text-gray-600 font-semibold">
@@ -581,24 +783,25 @@
                   <div id="multiSelectHint" class="text-[10px] text-gray-500 flex items-center gap-1">
                       <i data-lucide="list" size="12"></i><span>Sélection classique</span>
                   </div>
-              </div>
-
-            <button id="duplicateBtn" class="w-full mt-2 py-2 bg-yellow-50 text-yellow-700 text-xs font-bold rounded border border-yellow-200 hover:bg-yellow-100 flex items-center justify-center gap-2">
-                <i data-lucide="copy" size="14"></i> Dupliquer Objet
-            </button>
+                  <button id="duplicateBtn" class="w-full mt-1 py-2 bg-yellow-50 text-yellow-700 text-xs font-bold rounded border border-yellow-200 hover:bg-yellow-100 flex items-center justify-center gap-2">
+                      <i data-lucide="copy" size="14"></i> Dupliquer Objet
+                  </button>
+            </div>
         </div>
 
-        <!-- Footer Actions -->
-        <div class="glass-panel p-3 rounded-xl mt-auto">
-             <div class="grid grid-cols-2 gap-2">
-                 <button id="saveBtn" class="py-2 bg-green-600 text-white text-xs font-bold rounded hover:bg-green-700 shadow-lg shadow-green-900/20 transition flex items-center justify-center gap-1">
-                     <i data-lucide="save" size="14"></i> Sauver
-                 </button>
-                 <button id="loadBtn" class="py-2 bg-gray-600 text-white text-xs font-bold rounded hover:bg-gray-700 shadow-lg shadow-gray-900/20 transition flex items-center justify-center gap-1">
-                     <i data-lucide="folder-open" size="14"></i> Ouvrir
-                 </button>
-             </div>
-             <button id="resetBtn" class="w-full mt-2 text-[10px] text-gray-400 hover:text-red-500 underline decoration-dotted text-center">Réinitialiser la scène</button>
+        <div data-inspector-panel="fichier" class="flex flex-col gap-3 hidden">
+            <!-- Footer Actions -->
+            <div class="glass-panel p-3 rounded-xl">
+                 <div class="grid grid-cols-2 gap-2">
+                     <button id="saveBtn" class="py-2 bg-green-600 text-white text-xs font-bold rounded hover:bg-green-700 shadow-lg shadow-green-900/20 transition flex items-center justify-center gap-1">
+                         <i data-lucide="save" size="14"></i> Sauver
+                     </button>
+                     <button id="loadBtn" class="py-2 bg-gray-600 text-white text-xs font-bold rounded hover:bg-gray-700 shadow-lg shadow-gray-900/20 transition flex items-center justify-center gap-1">
+                         <i data-lucide="folder-open" size="14"></i> Ouvrir
+                     </button>
+                 </div>
+                 <button id="resetBtn" class="w-full mt-2 text-[10px] text-gray-400 hover:text-red-500 underline decoration-dotted text-center">Réinitialiser la scène</button>
+            </div>
         </div>
     </div>
 
@@ -903,6 +1106,146 @@
                   group.add(box, door, switches);
                   group.userData = { isFurniture: true, type: 'breakerBox', name: 'Boîtier disjoncteurs', isWallMounted: true, defaultY: 1.3, dims: {x:0.8, z:0.3}, feeds: [], isBreaker: true };
                   return group;
+              },
+              washer: () => {
+                  const body = new THREE.Mesh(new THREE.BoxGeometry(0.7, 1, 0.7), new THREE.MeshStandardMaterial({ color: '#e2e8f0' }));
+                  body.position.y = 0.5;
+                  const door = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.08, 24), new THREE.MeshStandardMaterial({ color: '#38bdf8', metalness: 0.4, roughness: 0.2 }));
+                  door.rotation.x = Math.PI / 2;
+                  door.position.set(0, 0.6, 0.35);
+                  const group = new THREE.Group();
+                  group.add(body, door);
+                  group.userData = { isFurniture: true, type: 'washer', name: 'Lave-linge', defaultY: 0, dims: {x:0.7, z:0.7} };
+                  return group;
+              },
+              dryer: () => {
+                  const mesh = FurnitureFactory.washer();
+                  mesh.userData = { ...mesh.userData, type: 'dryer', name: 'Sèche-linge' };
+                  mesh.children[1].material = new THREE.MeshStandardMaterial({ color: '#fde68a', metalness: 0.2, roughness: 0.4 });
+                  return mesh;
+              },
+              fridge: () => {
+                  const body = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.9, 0.8), new THREE.MeshStandardMaterial({ color: '#f8fafc' }));
+                  body.position.y = 0.95;
+                  const handle = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.6, 0.04), new THREE.MeshStandardMaterial({ color: '#0f172a' }));
+                  handle.position.set(0.45, 1.0, 0.42);
+                  const group = new THREE.Group();
+                  group.add(body, handle);
+                  group.userData = { isFurniture: true, type: 'fridge', name: 'Réfrigérateur', defaultY: 0, dims: {x:0.9, z:0.8} };
+                  return group;
+              },
+              fireExtinguisher: () => {
+                  const tank = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.6, 16), new THREE.MeshStandardMaterial({ color: '#ef4444' }));
+                  tank.position.y = 0.3;
+                  const head = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.1, 0.16), new THREE.MeshStandardMaterial({ color: '#0f172a' }));
+                  head.position.y = 0.65;
+                  const group = new THREE.Group();
+                  group.add(tank, head);
+                  group.userData = { isFurniture: true, type: 'fireExtinguisher', name: 'Extincteur incendie', defaultY: 0, dims: {x:0.2, z:0.2} };
+                  return group;
+              },
+              smokeDetector: () => {
+                  const disk = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.08, 24), new THREE.MeshStandardMaterial({ color: '#cbd5e1' }));
+                  disk.rotation.x = Math.PI / 2;
+                  disk.position.y = CONFIG.floorHeight - 0.05;
+                  disk.userData = { isFurniture: true, type: 'smokeDetector', name: 'Détecteur de fumée', defaultY: disk.position.y };
+                  return disk;
+              },
+              kitchenTable: () => {
+                  const top = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.08, 0.9), new THREE.MeshStandardMaterial({ color: '#fcd34d' }));
+                  top.position.y = 0.85;
+                  const legs = new THREE.Group();
+                  const legGeo = new THREE.CylinderGeometry(0.07, 0.07, 0.9, 12);
+                  const legMat = new THREE.MeshStandardMaterial({ color: '#78350f' });
+                  [[-0.7, 0.45], [0.7, 0.45], [-0.7, -0.45], [0.7, -0.45]].forEach(([x,z]) => {
+                      const leg = new THREE.Mesh(legGeo, legMat);
+                      leg.position.set(x, 0.45, z);
+                      legs.add(leg);
+                  });
+                  const group = new THREE.Group();
+                  group.add(top, legs);
+                  group.userData = { isFurniture: true, type: 'kitchenTable', name: 'Table de cuisine', defaultY: 0, dims: {x:1.6, z:0.9} };
+                  return group;
+              },
+              hood: () => {
+                  const body = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.3, 0.6), new THREE.MeshStandardMaterial({ color: '#334155', metalness: 0.6 }));
+                  body.position.y = 2.0;
+                  body.userData = { isFurniture: true, type: 'hood', name: 'Hotte de cuisine', isWallMounted: true, defaultY: body.position.y, dims: {x:1.2, z:0.6} };
+                  return body;
+              },
+              cooktop: () => {
+                  const plate = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.08, 0.8), new THREE.MeshStandardMaterial({ color: '#0f172a', metalness: 0.3 }));
+                  plate.position.y = 0.85;
+                  plate.userData = { isFurniture: true, type: 'cooktop', name: 'Plaque chauffante', defaultY: 0.85, dims: {x:1, z:0.8} };
+                  return plate;
+              },
+              microwave: () => {
+                  const body = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.4, 0.5), new THREE.MeshStandardMaterial({ color: '#e5e7eb' }));
+                  body.position.y = 0.2;
+                  const screen = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.25, 0.02), new THREE.MeshStandardMaterial({ color: '#0ea5e9' }));
+                  screen.position.set(-0.05, 0.22, 0.26);
+                  const group = new THREE.Group();
+                  group.add(body, screen);
+                  group.userData = { isFurniture: true, type: 'microwave', name: 'Micro-onde', defaultY: 0, dims: {x:0.7, z:0.5} };
+                  return group;
+              },
+              dumpster: () => {
+                  const body = new THREE.Mesh(new THREE.BoxGeometry(1.4, 1, 1), new THREE.MeshStandardMaterial({ color: '#1f2937' }));
+                  body.position.y = 0.5;
+                  const lid = new THREE.Mesh(new THREE.BoxGeometry(1.42, 0.12, 1.02), new THREE.MeshStandardMaterial({ color: '#0f172a' }));
+                  lid.position.y = 1.05;
+                  const group = new THREE.Group();
+                  group.add(body, lid);
+                  group.userData = { isFurniture: true, type: 'dumpster', name: 'Benne à ordures', defaultY: 0, dims: {x:1.4, z:1} };
+                  return group;
+              },
+              camera: () => {
+                  const body = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.25, 0.25), new THREE.MeshStandardMaterial({ color: '#0f172a' }));
+                  body.position.set(0, 1.8, 0);
+                  const lens = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.12, 12), new THREE.MeshStandardMaterial({ color: '#38bdf8' }));
+                  lens.rotation.x = Math.PI / 2;
+                  lens.position.set(0, 1.8, 0.16);
+                  const group = new THREE.Group();
+                  group.add(body, lens);
+                  group.userData = { isFurniture: true, type: 'camera', name: 'Caméra de surveillance', isWallMounted: true, defaultY: 1.8, dims: {x:0.4, z:0.25} };
+                  return group;
+              },
+              fireAlarm: () => {
+                  const mesh = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.12, 16), new THREE.MeshStandardMaterial({ color: '#ef4444' }));
+                  mesh.rotation.x = Math.PI / 2;
+                  mesh.position.y = 2.2;
+                  mesh.userData = { isFurniture: true, type: 'fireAlarm', name: 'Alarme incendie', defaultY: mesh.position.y, dims: {x:0.2, z:0.2} };
+                  return mesh;
+              },
+              fireCabinet: () => {
+                  const body = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.6, 0.35), new THREE.MeshStandardMaterial({ color: '#b91c1c' }));
+                  body.position.y = 0.8;
+                  const glass = new THREE.Mesh(new THREE.BoxGeometry(0.75, 1.3, 0.05), new THREE.MeshStandardMaterial({ color: '#fca5a5', transparent: true, opacity: 0.6 }));
+                  glass.position.set(0, 0.8, 0.18);
+                  const group = new THREE.Group();
+                  group.add(body, glass);
+                  group.userData = { isFurniture: true, type: 'fireCabinet', name: 'Armoire alarme incendie', isWallMounted: true, defaultY: 0, dims: {x:0.9, z:0.35} };
+                  return group;
+              },
+              mainBreaker: () => {
+                  const board = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.6, 0.35), new THREE.MeshStandardMaterial({ color: '#0f172a' }));
+                  board.position.y = 0.8;
+                  const indicator = new THREE.Mesh(new THREE.BoxGeometry(1, 0.2, 0.05), new THREE.MeshStandardMaterial({ color: '#22c55e', emissive: '#22c55e', emissiveIntensity: 0.5 }));
+                  indicator.position.set(0, 1.4, 0.2);
+                  const group = new THREE.Group();
+                  group.add(board, indicator);
+                  group.userData = { isFurniture: true, type: 'mainBreaker', name: 'Tableau électrique principal', isWallMounted: true, defaultY: 0, dims: {x:1.2, z:0.35} };
+                  return group;
+              },
+              waterHeater: () => {
+                  const cyl = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 1.6, 16), new THREE.MeshStandardMaterial({ color: '#e2e8f0' }));
+                  cyl.position.y = 0.8;
+                  const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.52, 0.52, 0.1, 16), new THREE.MeshStandardMaterial({ color: '#94a3b8' }));
+                  cap.position.y = 1.55;
+                  const group = new THREE.Group();
+                  group.add(cyl, cap);
+                  group.userData = { isFurniture: true, type: 'waterHeater', name: "Ballon d'eau chaude", defaultY: 0, dims: {x:1, z:1} };
+                  return group;
               }
           };
 
@@ -1042,9 +1385,24 @@
                       { value: 'desk', label: 'Bureau' },
                       { value: 'chair', label: 'Chaise' },
                       { value: 'table', label: 'Table' },
+                      { value: 'kitchenTable', label: 'Table de cuisine' },
                       { value: 'shower', label: 'Douche' },
                       { value: 'bathtub', label: 'Baignoire' },
                       { value: 'wardrobe', label: 'Armoire' },
+                      { value: 'washer', label: 'Lave-linge' },
+                      { value: 'dryer', label: 'Sèche-linge' },
+                      { value: 'fridge', label: 'Réfrigérateur' },
+                      { value: 'fireExtinguisher', label: 'Extincteur incendie' },
+                      { value: 'smokeDetector', label: 'Détecteur de fumée' },
+                      { value: 'hood', label: 'Hotte de cuisine' },
+                      { value: 'cooktop', label: 'Plaque chauffante' },
+                      { value: 'microwave', label: 'Micro-onde' },
+                      { value: 'dumpster', label: 'Benne à ordures' },
+                      { value: 'camera', label: 'Caméra de surveillance' },
+                      { value: 'fireAlarm', label: 'Alarme incendie' },
+                      { value: 'fireCabinet', label: 'Armoire alarme incendie' },
+                      { value: 'mainBreaker', label: 'Grand tableau électrique' },
+                      { value: 'waterHeater', label: 'Ballon d’eau chaude' },
                       { value: 'window', label: 'Fenêtre' },
                       { value: 'door', label: 'Porte' },
                       { value: 'toilet', label: 'WC' },
@@ -1059,8 +1417,39 @@
                       { value: 'heater', label: 'Chauffage' },
                       { value: 'breakerBox', label: 'Boîtier disjoncteurs' }
                   ];
+                this.uiMode = 'chambre';
                 this.stateManager = new StateManager(this); this.gridHelper = null;
                 this.init();
+            }
+
+            activateBuilderTab(tab) {
+                const tabs = document.querySelectorAll('[data-builder-tab]');
+                const panels = document.querySelectorAll('[data-builder-panel]');
+                tabs.forEach(btn => btn.classList.toggle('active', btn.dataset.builderTab === tab));
+                panels.forEach(panel => panel.classList.toggle('hidden', panel.dataset.builderPanel !== tab));
+            }
+
+            activateInspectorTab(tab) {
+                const tabs = document.querySelectorAll('[data-inspector-tab]');
+                const panels = document.querySelectorAll('[data-inspector-panel]');
+                tabs.forEach(btn => btn.classList.toggle('active', btn.dataset.inspectorTab === tab));
+                panels.forEach(panel => panel.classList.toggle('hidden', panel.dataset.inspectorPanel !== tab));
+            }
+
+            setUIMode(mode) {
+                this.uiMode = mode;
+                document.querySelectorAll('[data-mode-btn]').forEach(btn => {
+                    const active = btn.dataset.modeBtn === mode;
+                    btn.classList.toggle('active', active);
+                });
+                const chip = document.getElementById('modeChip');
+                if(chip) {
+                    const labels = { chambre: 'Mode chambre', construction: 'Mode construction', exterieur: 'Mode extérieur' };
+                    chip.textContent = labels[mode] || `Mode ${mode}`;
+                }
+                if(mode === 'construction') this.activateBuilderTab('construction');
+                else if(mode === 'exterieur') this.activateBuilderTab('exterieur');
+                else this.activateBuilderTab('chambre');
             }
 
               getFloorY(floorIndex) {
@@ -1256,6 +1645,9 @@
             }
 
             bindUI() {
+                document.querySelectorAll('[data-builder-tab]').forEach(btn => btn.onclick = () => this.activateBuilderTab(btn.dataset.builderTab));
+                document.querySelectorAll('[data-inspector-tab]').forEach(btn => btn.onclick = () => this.activateInspectorTab(btn.dataset.inspectorTab));
+                document.querySelectorAll('[data-mode-btn]').forEach(btn => btn.onclick = () => this.setUIMode(btn.dataset.modeBtn));
                 document.getElementById('toolTranslate').onclick = () => this.setMode('translate');
                 document.getElementById('toolRotate').onclick = () => this.setMode('rotate');
                 document.getElementById('toolScale').onclick = () => this.setMode('scale');
@@ -1306,6 +1698,9 @@
                     document.getElementById('furnScale'+axis).onchange = (e) => this.updateFurnitureScale(axis.toLowerCase(), parseFloat(e.target.value));
                 });
                   document.getElementById('furnRotationY').onchange = (e) => this.updateFurnitureRotation(parseFloat(e.target.value));
+                this.activateBuilderTab('chambre');
+                this.activateInspectorTab('essentiel');
+                this.setUIMode(this.uiMode);
                 this.setColorTarget('block');
                 this.updateSelectionChips();
                 this.updateSelectionLockUI();
@@ -1329,6 +1724,93 @@
                     const o = document.createElement('option');
                     o.value = opt.value; o.textContent = opt.label; select.appendChild(o);
                 });
+            }
+
+            getSizeFactor(size) {
+                if(size === 'petite') return 0.9;
+                if(size === 'grande') return 1.35;
+                return 1.1;
+            }
+
+            getPresetFurniture(kind, size = 'moyenne') {
+                const commonShelves = [{ type: 'wardrobe', pos: [1.6, 1.2, -2.2] }];
+                const presets = {
+                    cuisine: [
+                        { type: 'fridge', pos: [-1.7, 0, -2.2] },
+                        { type: 'kitchenTable', pos: [0, 0, 0.6] },
+                        { type: 'cooktop', pos: [-0.4, 0.85, 1.8] },
+                        { type: 'hood', pos: [-0.4, 2, 1.8] },
+                        { type: 'microwave', pos: [1.6, 1.2, 1.4] },
+                        { type: 'sink', pos: [1.6, 0, -1.6] },
+                        { type: 'fireExtinguisher', pos: [-1.9, 0, 2.2] },
+                        { type: 'smokeDetector', pos: [0, CONFIG.floorHeight - 0.2, 0] }
+                    ],
+                    bain: [
+                        { type: 'shower', pos: [-1.6, 0, -2.4] },
+                        { type: 'bathtub', pos: [1.6, 0, -1.8] },
+                        { type: 'toilet', pos: [1.6, 0, 1.6] },
+                        { type: 'sink', pos: [0, 0, 1.8] },
+                        { type: 'mirror', pos: [0, 1.3, 1.85] },
+                        { type: 'wallLamp', pos: [-0.4, 1.8, 1.8] }
+                    ],
+                    buanderie: [
+                        { type: 'washer', pos: [-1.2, 0, -1.6] },
+                        { type: 'dryer', pos: [-0.2, 0, -1.6] },
+                        { type: 'waterHeater', pos: [1.6, 0, 1.6] },
+                        { type: 'table', pos: [0, 0, 0.4] }
+                    ],
+                    atelier: [
+                        { type: 'table', pos: [0, 0, 0] },
+                        { type: 'chair', pos: [0.6, 0, 0.6] },
+                        { type: 'fireExtinguisher', pos: [-1.8, 0, 2.2] },
+                        { type: 'camera', pos: [0, 2.4, -2.4] }
+                    ],
+                    bureau: [
+                        { type: 'desk', pos: [1.4, 0, -1.8] },
+                        { type: 'chair', pos: [1.0, 0, -1.0] },
+                        { type: 'table', pos: [0, 0, 1.2] },
+                        { type: 'tv', pos: [-1.6, 1.6, 0] }
+                    ],
+                    reserve: [
+                        ...commonShelves,
+                        { type: 'innerWall', pos: [0, 0, 0], rot: [0, Math.PI / 2, 0] },
+                        { type: 'dumpster', pos: [0, 0, 1.8] }
+                    ],
+                    lingerie: [
+                        { type: 'wardrobe', pos: [1.5, 1.2, -2.2] },
+                        { type: 'chair', pos: [0, 0, 0.2] },
+                        { type: 'fireAlarm', pos: [-1.8, 2.4, 0] }
+                    ],
+                    reunion: [
+                        { type: 'table', pos: [0, 0, 0] },
+                        { type: 'chair', pos: [0, 0, 1.2] },
+                        { type: 'chair', pos: [1.2, 0, -0.8] },
+                        { type: 'chair', pos: [-1.2, 0, -0.8] },
+                        { type: 'camera', pos: [0, 2.4, -2.2] }
+                    ]
+                };
+                return presets[kind] ? presets[kind].map(item => ({ ...item })) : [];
+            }
+
+            createPresetSpace(kind, size = 'moyenne') {
+                const furnitureList = this.getPresetFurniture(kind, size);
+                const room = this.createBlock('room', furnitureList);
+                if(room) {
+                    const factor = this.getSizeFactor(size);
+                    room.scale.set(factor, 1, factor);
+                    const labels = {
+                        cuisine: 'Cuisine', bain: 'Salle de bain', buanderie: 'Buanderie',
+                        atelier: 'Atelier', bureau: 'Bureau', reserve: 'Réserve',
+                        lingerie: 'Lingerie', reunion: 'Salle de réunion'
+                    };
+                    const readable = labels[kind] || 'Espace';
+                    room.userData.structureKind = readable;
+                    room.userData.sizeVariant = size;
+                    room.userData.name = `${readable} ${size}`;
+                    room.userData.labelText = readable.slice(0, 1).toUpperCase();
+                    this.addLabel(room, room.userData.labelText);
+                }
+                return room;
             }
 
             createBlock(type, furnitureList = null, floorOverride = null) {
@@ -1483,10 +1965,28 @@
                 return mesh;
             }
 
-            createExterior(type, floorOverride = 0) {
-                const factory = ExteriorFactory[type];
-                if(!factory) { this.showToast('Élément extérieur inconnu', 'error'); return null; }
-                const element = factory();
+            createApartment(size = 'moyenne') {
+                const factor = this.getSizeFactor(size);
+                const baseX = Math.round((Math.random() * 6 - 3));
+                const baseZ = Math.round((Math.random() * 4 - 2));
+                const spacing = CONFIG.roomWidth * factor + 1;
+                const presets = ['cuisine', 'reunion', 'bain'];
+                presets.forEach((preset, index) => {
+                    const room = this.createBlock('room', this.getPresetFurniture(preset, size));
+                    if(room) {
+                        room.scale.set(factor, 1, factor);
+                        room.position.set(baseX + (index - 1) * spacing, this.getFloorY(this.floors.current), baseZ);
+                        room.userData.structureKind = 'Appartement';
+                        room.userData.sizeVariant = size;
+                        room.userData.name = `Appartement ${size} - Pièce ${index + 1}`;
+                        room.userData.labelText = `A${index + 1}`;
+                        this.addLabel(room, room.userData.labelText);
+                    }
+                });
+            }
+
+            placeExteriorElement(element, floorOverride = 0) {
+                if(!element) return null;
                 const randX = Math.round((Math.random() * 8 - 4));
                 const randZ = Math.round((Math.random() * 8 - 4));
                 const targetFloor = floorOverride ?? 0;
@@ -1507,6 +2007,48 @@
                 this.stateManager.snapshot(); this.updateStats();
                 this.showToast(`${element.userData.name} ajoutée`, 'success');
                 return element;
+            }
+
+            createExterior(type, floorOverride = 0) {
+                const factory = ExteriorFactory[type];
+                if(!factory) { this.showToast('Élément extérieur inconnu', 'error'); return null; }
+                const element = factory();
+                return this.placeExteriorElement(element, floorOverride);
+            }
+
+            createExteriorPreset(kind, size = 'moyenne') {
+                const factor = this.getSizeFactor(size);
+                let element = null;
+                if(kind === 'terrasse') {
+                    const platform = new THREE.Mesh(new THREE.BoxGeometry(5 * factor, 0.2, 4 * factor), new THREE.MeshStandardMaterial({ color: '#fbbf24' }));
+                    platform.position.y = 0.1;
+                    const planters = new THREE.Mesh(new THREE.BoxGeometry(5 * factor, 0.4, 0.4), new THREE.MeshStandardMaterial({ color: '#16a34a' }));
+                    planters.position.set(0, 0.2, 2 * factor);
+                    const lights = new THREE.Mesh(new THREE.SphereGeometry(0.15, 12, 12), new THREE.MeshStandardMaterial({ color: '#fde68a', emissive: '#f59e0b', emissiveIntensity: 0.8 }));
+                    const group = new THREE.Group();
+                    group.add(platform, planters);
+                    for(let i = -1; i <= 1; i++) {
+                        const copy = lights.clone();
+                        copy.position.set(i * 1.5 * factor, 1.8, 0);
+                        group.add(copy);
+                    }
+                    group.userData = { type: 'Exterieur', element: `terrasse-${size}`, name: `Terrasse ${size}`, structureKind: 'Terrasse', sizeVariant: size };
+                    element = group;
+                } else if(kind === 'parking') {
+                    const base = new THREE.Mesh(new THREE.BoxGeometry(6 * factor, 0.05, 4 * factor), new THREE.MeshStandardMaterial({ color: '#cbd5e1' }));
+                    base.receiveShadow = true;
+                    const lineCount = factor > 1.2 ? 2 : 1;
+                    const group = new THREE.Group();
+                    group.add(base);
+                    for(let i = 0; i < lineCount; i++) {
+                        const line = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.06, 3.6 * factor), new THREE.MeshStandardMaterial({ color: '#eab308' }));
+                        line.position.set((i - (lineCount - 1) / 2) * 2 * factor, 0.04, 0);
+                        group.add(line);
+                    }
+                    group.userData = { type: 'Exterieur', element: `parking-${size}`, name: `Place de parking ${size}`, structureKind: 'Parking', sizeVariant: size };
+                    element = group;
+                }
+                return this.placeExteriorElement(element, 0);
             }
 
             addLabel(parent, text) {
@@ -2721,7 +3263,12 @@
                     else if(data.type === 'Couloir') obj = this.createBlock('corridor');
                     else if(data.type === 'Zone' || data.type === 'Generic') obj = this.createBlock('generic');
                     else if(data.type === 'Escalier') obj = this.createBlock('stairs');
-                    else if(data.userData?.type === 'Exterieur') obj = this.createExterior(data.userData.element || 'pelouse', data.userData.floor || 0);
+                    else if(data.userData?.type === 'Exterieur') {
+                        const element = data.userData.element || 'pelouse';
+                        if(element.startsWith('terrasse')) obj = this.createExteriorPreset('terrasse', element.split('-')[1] || 'moyenne');
+                        else if(element.startsWith('parking')) obj = this.createExteriorPreset('parking', element.split('-')[1] || 'moyenne');
+                        else obj = this.createExterior(element, data.userData.floor || 0);
+                    }
                       if(obj) {
                           obj.position.fromArray(data.position); obj.rotation.fromArray(data.rotation); obj.scale.fromArray(data.scale); obj.userData = data.userData;
                           const yBase = this.getFloorY(obj.userData.floor || 0) + this.getTypeYOffset(obj.userData.type);
