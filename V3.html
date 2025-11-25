@@ -566,13 +566,22 @@
                   </div>
               </div>
 
-              <div class="mb-3">
-                  <label class="block text-[10px] font-bold text-gray-500 mb-1">Dupliquer vers un étage</label>
+              <div class="mb-3 space-y-2">
+                  <div class="flex items-center justify-between">
+                      <label class="block text-[10px] font-bold text-gray-500">Dupliquer vers un étage</label>
+                      <label class="flex items-center gap-1 text-[10px] text-gray-600 font-semibold">
+                          <input id="multiSelectToggle" type="checkbox" class="accent-emerald-600" />
+                          Sélection multiple
+                      </label>
+                  </div>
                   <div class="flex gap-2 items-center">
                       <input id="duplicateFloorTarget" type="number" min="0" class="flex-1 bg-white border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
-                    <span class="text-[10px] text-gray-400">RDC=0</span>
-                </div>
-            </div>
+                      <span class="text-[10px] text-gray-400">RDC=0</span>
+                  </div>
+                  <div id="multiSelectHint" class="text-[10px] text-gray-500 flex items-center gap-1">
+                      <i data-lucide="list" size="12"></i><span>Sélection classique</span>
+                  </div>
+              </div>
 
             <button id="duplicateBtn" class="w-full mt-2 py-2 bg-yellow-50 text-yellow-700 text-xs font-bold rounded border border-yellow-200 hover:bg-yellow-100 flex items-center justify-center gap-2">
                 <i data-lucide="copy" size="14"></i> Dupliquer Objet
@@ -1022,6 +1031,7 @@
                   this.orbit = null; this.control = null; this.raycaster = new THREE.Raycaster(); this.pointer = new THREE.Vector2();
                   this.floors = { current: 0, max: 0 }; this.roomCounter = 1;
                   this.selectedObject = null; this.selectionLocked = false; this.isGlobalView = false; this.colorTarget = 'block'; this.opacityTarget = 'walls'; this.labelsVisible = true;
+                  this.multiSelectEnabled = false; this.multiSelection = new Set();
                   this.cablesVisible = true; this.cableMaterials = [];
                   this.breakerCableGroup = null;
                   this.furnitureChoices = [
@@ -1262,6 +1272,7 @@
                 document.getElementById('targetBlock').onclick = (e) => this.setColorTarget('block', e.target);
                 document.getElementById('targetLabel').onclick = (e) => this.setColorTarget('label', e.target);
                 document.getElementById('selectionLockBtn').onclick = () => this.toggleSelectionLock();
+                document.getElementById('multiSelectToggle').onchange = (e) => this.setMultiSelectionEnabled(e.target.checked);
                 document.getElementById('saveBtn').onclick = () => this.saveToFile();
                 document.getElementById('loadBtn').onclick = () => document.getElementById('fileInput').click();
                 document.getElementById('fileInput').onchange = (e) => this.loadFile(e);
@@ -2062,7 +2073,13 @@
             }
 
               selectObject(obj) {
-                  this.selectionLocked = !!obj;
+                  if(!this.multiSelectEnabled) {
+                      this.multiSelection.clear();
+                  } else if(obj) {
+                      if(this.multiSelection.has(obj)) this.multiSelection.delete(obj); else this.multiSelection.add(obj);
+                  }
+
+                  this.selectionLocked = this.multiSelectEnabled ? false : !!obj;
                   this.selectedObject = obj;
                   const panel = document.getElementById('propPanel');
                   const dupInput = document.getElementById('duplicateFloorTarget');
@@ -2108,6 +2125,7 @@
                     this.updateColorControlsForSelection(null);
                     if(dupInput) dupInput.value = this.floors.current;
                 }
+                  this.updateMultiSelectionUI();
                   this.updateSelectionChips();
                   this.updateSelectionLockUI();
               }
@@ -2464,6 +2482,10 @@
                 const label = btn.querySelector('span');
                 const locked = this.selectionLocked && !!this.selectedObject;
 
+                btn.disabled = this.multiSelectEnabled;
+                btn.classList.toggle('opacity-50', this.multiSelectEnabled);
+                btn.classList.toggle('pointer-events-none', this.multiSelectEnabled);
+
                 btn.classList.toggle('bg-emerald-600/90', locked);
                 btn.classList.toggle('bg-slate-700/80', !locked);
                 btn.title = locked ? 'Déverrouiller la sélection' : 'Verrouiller la sélection';
@@ -2484,6 +2506,27 @@
                 this.selectionLocked = !this.selectionLocked;
                 this.updateSelectionLockUI();
                 this.showToast(this.selectionLocked ? 'Sélection verrouillée' : 'Sélection déverrouillée', 'info');
+            }
+
+            setMultiSelectionEnabled(enabled) {
+                this.multiSelectEnabled = enabled;
+                if(!enabled) this.multiSelection.clear();
+                else if(this.selectedObject && !this.selectedObject.userData.isFurniture) this.multiSelection.add(this.selectedObject);
+                this.selectionLocked = false;
+                this.updateMultiSelectionUI();
+                this.updateSelectionLockUI();
+                this.showToast(enabled ? 'Sélection multiple activée' : 'Sélection multiple désactivée', 'info');
+            }
+
+            updateMultiSelectionUI() {
+                const hint = document.getElementById('multiSelectHint');
+                if(!hint) return;
+                const count = Array.from(this.multiSelection).filter(obj => obj?.userData && !obj.userData.isFurniture).length;
+                const label = this.multiSelectEnabled ? `${count} élément(s) prêts` : 'Sélection classique';
+                hint.querySelector('span').textContent = label;
+                const icon = hint.querySelector('i');
+                if(icon) icon.setAttribute('data-lucide', this.multiSelectEnabled ? 'check-square' : 'list');
+                lucide.createIcons({ root: hint });
             }
 
             setRoomWallColor(room, hex) {
@@ -2537,12 +2580,13 @@
                 const scales = { 'S': [0.8, 1, 0.8], 'M': [1, 1, 1], 'L': [1.5, 1, 1.2] };
                 const s = scales[size];
                 this.selectedObject.scale.set(s[0], s[1], s[2]);
-                this.snapObject(this.selectedObject); 
+                this.snapObject(this.selectedObject);
                 this.stateManager.snapshot(); this.updateStats();
             }
 
             duplicateSelection() {
-                if(!this.selectedObject) return;
+                const targets = this.getDuplicationTargets();
+                if(targets.length === 0) { this.showToast('Aucun objet sélectionné à dupliquer', 'info'); return; }
                 const dupInput = document.getElementById('duplicateFloorTarget');
                 let targetFloor = this.floors.current;
                 if(dupInput) {
@@ -2551,68 +2595,94 @@
                 }
                 if(targetFloor > this.floors.max) { this.floors.max = targetFloor; this.updateUI(); }
 
-                if(this.selectedObject.userData.isFurniture) {
-                    const clone = this.selectedObject.clone();
-                    clone.position.x += 0.5; clone.position.z += 0.5;
-                    clone.userData.opacity = this.selectedObject.userData.opacity ?? this.computeObjectOpacity(this.selectedObject);
-                    this.applyStoredOpacityToObject(clone);
-                    this.restoreMaterialOpacity(clone);
-                    this.setOpacity(clone, 1);
-                    this.selectedObject.parent.add(clone); this.selectObject(clone);
-                } else {
-                    const original = this.selectedObject;
-                    const furnitureList = [];
-                    const fGroup = original.getObjectByName('Furniture');
-                    if(fGroup) {
-                        fGroup.children.forEach(c => furnitureList.push({
-                            type: c.userData.type,
-                            pos: c.position.toArray(),
-                            rot: [c.rotation.x, c.rotation.y, c.rotation.z],
-                            scale: c.scale.toArray(),
-                            userData: JSON.parse(JSON.stringify(c.userData))
-                        }));
-                    }
-                    const baseType = original.userData.type === 'Chambre' ? 'room' : original.userData.type === 'Couloir' ? 'corridor' : (original.userData.type === 'Escalier' ? 'stairs' : 'generic');
-                    let clone;
-                    if(original.userData.type === 'Exterieur') {
-                        clone = this.createExterior(original.userData.element, targetFloor);
+                let lastClone = null;
+                targets.forEach(original => {
+                    if(original.userData?.isFurniture) {
+                        if(!this.multiSelectEnabled) lastClone = this.duplicateFurnitureObject(original) || lastClone;
                     } else {
-                        clone = this.createBlock(baseType, furnitureList, targetFloor);
+                        lastClone = this.duplicateStructureObject(original, targetFloor) || lastClone;
                     }
-                    if(clone) {
-                        const offset = targetFloor === original.userData.floor ? 2 : 0;
-                        const yBase = this.getFloorY(targetFloor) + this.getTypeYOffset(clone.userData.type);
-                        clone.position.set(original.position.x + offset, yBase, original.position.z + offset);
-                        clone.rotation.copy(original.rotation);
-                        clone.scale.copy(original.scale);
-                        clone.userData = JSON.parse(JSON.stringify(original.userData));
-                        clone.userData.floor = targetFloor;
-                        if(clone.userData.type === 'Chambre') this.ensureRoomId(clone, true);
-                        this.ensureLabelDefaults(clone);
-                        if(clone.userData.type === 'Chambre') {
-                            this.setRoomWallColor(clone, clone.userData.wallColor || '#6366f1');
-                            this.applyRoomWallState(clone);
-                        }
-                        this.applyStoredOpacityToObject(clone);
-                        if(!isNaN(parseInt(clone.userData.labelText))) {
-                          const newNum = this.roomCounter++; clone.userData.labelText = newNum.toString(); clone.userData.name = `Chambre ${newNum}`;
-                              this.addLabel(clone, clone.userData.labelText);
-                          }
-                          this.refreshDoorLabels(clone);
-                          this.restoreMaterialOpacity(clone);
-                          this.setOpacity(clone, 1);
+                });
+
+                this.updateFloorVisibility();
+                this.updateBreakerCables();
+                this.stateManager.snapshot(); this.updateStats();
+                if(lastClone) this.selectObject(lastClone);
+                const label = targets.length > 1 ? `${targets.length} objets` : 'Objet';
+                this.showToast(`${label} dupliqué(s) vers ${this.formatFloorLabel(targetFloor)}`, 'success');
+            }
+
+            getDuplicationTargets() {
+                if(this.multiSelectEnabled && this.multiSelection.size > 0) {
+                    return Array.from(this.multiSelection).filter(obj => obj?.userData && !obj.userData.isFurniture);
+                }
+                return this.selectedObject ? [this.selectedObject] : [];
+            }
+
+            duplicateFurnitureObject(original) {
+                if(!original?.userData?.isFurniture) return null;
+                const clone = original.clone();
+                clone.position.x += 0.5; clone.position.z += 0.5;
+                clone.userData.opacity = original.userData.opacity ?? this.computeObjectOpacity(original);
+                this.applyStoredOpacityToObject(clone);
+                this.restoreMaterialOpacity(clone);
+                this.setOpacity(clone, 1);
+                original.parent.add(clone);
+                return clone;
+            }
+
+            duplicateStructureObject(original, targetFloor) {
+                if(!original?.userData || original.userData.isFurniture) return null;
+                const furnitureList = [];
+                const fGroup = original.getObjectByName('Furniture');
+                if(fGroup) {
+                    fGroup.children.forEach(c => furnitureList.push({
+                        type: c.userData.type,
+                        pos: c.position.toArray(),
+                        rot: [c.rotation.x, c.rotation.y, c.rotation.z],
+                        scale: c.scale.toArray(),
+                        userData: JSON.parse(JSON.stringify(c.userData))
+                    }));
+                }
+                const baseType = original.userData.type === 'Chambre' ? 'room' : original.userData.type === 'Couloir' ? 'corridor' : (original.userData.type === 'Escalier' ? 'stairs' : 'generic');
+                let clone;
+                if(original.userData.type === 'Exterieur') {
+                    clone = this.createExterior(original.userData.element, targetFloor);
+                } else {
+                    clone = this.createBlock(baseType, furnitureList, targetFloor);
+                }
+                if(clone) {
+                    const offset = targetFloor === original.userData.floor ? 2 : 0;
+                    const yBase = this.getFloorY(targetFloor) + this.getTypeYOffset(clone.userData.type);
+                    clone.position.set(original.position.x + offset, yBase, original.position.z + offset);
+                    clone.rotation.copy(original.rotation);
+                    clone.scale.copy(original.scale);
+                    clone.userData = JSON.parse(JSON.stringify(original.userData));
+                    clone.userData.floor = targetFloor;
+                    if(clone.userData.type === 'Chambre') this.ensureRoomId(clone, true);
+                    this.ensureLabelDefaults(clone);
+                    if(clone.userData.type === 'Chambre') {
+                        this.setRoomWallColor(clone, clone.userData.wallColor || '#6366f1');
+                        this.applyRoomWallState(clone);
+                    }
+                    this.applyStoredOpacityToObject(clone);
+                    if(!isNaN(parseInt(clone.userData.labelText))) {
+                      const newNum = this.roomCounter++; clone.userData.labelText = newNum.toString(); clone.userData.name = `Chambre ${newNum}`;
+                          this.addLabel(clone, clone.userData.labelText);
                       }
-                  }
-                  this.updateFloorVisibility();
-                  this.updateBreakerCables();
-                  this.stateManager.snapshot(); this.updateStats(); this.showToast(`Objet dupliqué vers ${this.formatFloorLabel(targetFloor)}`, 'success');
-              }
+                      this.refreshDoorLabels(clone);
+                      this.restoreMaterialOpacity(clone);
+                      this.setOpacity(clone, 1);
+                }
+                return clone;
+            }
 
             deleteSelection() {
                 if(!this.selectedObject) return;
                 const isDoorFurniture = this.selectedObject.userData.isFurniture && this.selectedObject.userData.type === 'door';
                 const parentRoom = isDoorFurniture ? this.selectedObject.parent?.parent : null;
 
+                if(this.multiSelectEnabled) this.multiSelection.delete(this.selectedObject);
                 if(this.selectedObject.userData.isFurniture) this.selectedObject.parent.remove(this.selectedObject);
                 else this.scene.remove(this.selectedObject);
 
@@ -2643,6 +2713,7 @@
 
             loadScene(state) {
                   this.resetScene(false); this.roomCounter = state.roomCounter; this.floors = state.floors; this.labelsVisible = state.labelsVisible !== undefined ? state.labelsVisible : true; this.cablesVisible = state.breakerCablesVisible !== undefined ? state.breakerCablesVisible : true;
+                  this.multiSelection.clear(); this.updateMultiSelectionUI();
                   state.objects.forEach(data => {
                       const savedCurrent = this.floors.current; this.floors.current = data.userData.floor;
                       let obj;
@@ -2686,6 +2757,7 @@
                   if(this.breakerCableGroup) this.breakerCableGroup.clear();
                   this.cableMaterials = [];
                   this.roomCounter = 1; this.floors = { current: 0, max: 0 }; this.labelsVisible = true; this.cablesVisible = true; this.updateUI(); this.updateStats();
+                  this.multiSelection.clear(); this.updateMultiSelectionUI();
                   this.updateCableToggleButton();
                   if(createDefault) { this.createBlock('room'); this.stateManager.history = []; this.stateManager.snapshot(); this.showToast('Reset', 'info'); }
               }
