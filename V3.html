@@ -382,10 +382,10 @@
                         </div>
                     </div>
 
-                    <div class="subsection-card p-3 rounded-xl">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-xs font-bold text-gray-600 uppercase">Structures complètes</span>
-                            <span class="chip">3 tailles</span>
+                      <div class="subsection-card p-3 rounded-xl">
+                          <div class="flex items-center justify-between mb-2">
+                              <span class="text-xs font-bold text-gray-600 uppercase">Structures complètes</span>
+                              <span class="chip">3 tailles</span>
                         </div>
                         <div class="grid grid-cols-3 gap-2 text-[11px]">
                             <button onclick="app.createApartment('petite')" class="p-2 bg-white border border-gray-200 rounded-lg hover:border-sky-400 transition flex flex-col items-center gap-1">
@@ -401,13 +401,37 @@
                             <button onclick="app.createApartment('grande')" class="p-2 bg-white border border-gray-200 rounded-lg hover:border-sky-400 transition flex flex-col items-center gap-1">
                                 <i data-lucide="home" size="16" class="text-sky-600"></i>
                                 <span class="font-semibold text-gray-700">Appartement L</span>
-                                <span class="text-[10px] text-gray-500 text-center">Avec cloisonnement intérieur</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                                  <span class="text-[10px] text-gray-500 text-center">Avec cloisonnement intérieur</span>
+                              </button>
+                          </div>
+                      </div>
 
-                <!-- Panel Extérieur -->
+                      <div class="subsection-card p-3 rounded-xl">
+                          <div class="flex items-center justify-between mb-2">
+                              <span class="text-xs font-bold text-gray-600 uppercase">Toitures modulaires</span>
+                              <span class="chip">Étage + couverture</span>
+                          </div>
+                          <div class="grid grid-cols-3 gap-2 text-[11px]">
+                              <button onclick="app.createRoof('carre')" class="p-2 bg-white border border-slate-200 rounded-lg hover:border-slate-400 transition flex flex-col items-center gap-1">
+                                  <i data-lucide="square" size="16" class="text-slate-700"></i>
+                                  <span class="font-semibold text-gray-700 text-center">Toiture carrée</span>
+                                  <span class="text-[10px] text-gray-500 text-center">Plate + acrotères</span>
+                              </button>
+                              <button onclick="app.createRoof('triangle')" class="p-2 bg-white border border-amber-200 rounded-lg hover:border-amber-400 transition flex flex-col items-center gap-1">
+                                  <i data-lucide="triangle" size="16" class="text-amber-600"></i>
+                                  <span class="font-semibold text-gray-700 text-center">Toiture triangulaire</span>
+                                  <span class="text-[10px] text-gray-500 text-center">Comble prêt à aménager</span>
+                              </button>
+                              <button onclick="app.createRoof('arrondi')" class="p-2 bg-white border border-cyan-200 rounded-lg hover:border-cyan-400 transition flex flex-col items-center gap-1">
+                                  <i data-lucide="circle" size="16" class="text-cyan-600"></i>
+                                  <span class="font-semibold text-gray-700 text-center">Toiture arrondie</span>
+                                  <span class="text-[10px] text-gray-500 text-center">Dôme léger</span>
+                              </button>
+                          </div>
+                      </div>
+                  </div>
+
+                  <!-- Panel Extérieur -->
                 <div data-builder-panel="exterieur" class="flex flex-col gap-3 hidden">
                     <div class="subsection-card p-3 rounded-xl">
                         <div class="flex items-center justify-between mb-2">
@@ -1248,17 +1272,145 @@
                   group.userData = { isFurniture: true, type: 'mainBreaker', name: 'Tableau électrique principal', isWallMounted: true, defaultY: 0, dims: {x:1.2, z:0.35} };
                   return group;
               },
-              waterHeater: () => {
-                  const cyl = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 1.6, 16), new THREE.MeshStandardMaterial({ color: '#e2e8f0' }));
-                  cyl.position.y = 0.8;
-                  const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.52, 0.52, 0.1, 16), new THREE.MeshStandardMaterial({ color: '#94a3b8' }));
-                  cap.position.y = 1.55;
-                  const group = new THREE.Group();
-                  group.add(cyl, cap);
-                  group.userData = { isFurniture: true, type: 'waterHeater', name: "Ballon d'eau chaude", defaultY: 0, dims: {x:1, z:1} };
-                  return group;
-              }
-          };
+                waterHeater: () => {
+                    const cyl = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 1.6, 16), new THREE.MeshStandardMaterial({ color: '#e2e8f0' }));
+                    cyl.position.y = 0.8;
+                    const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.52, 0.52, 0.1, 16), new THREE.MeshStandardMaterial({ color: '#94a3b8' }));
+                    cap.position.y = 1.55;
+                    const group = new THREE.Group();
+                    group.add(cyl, cap);
+                    group.userData = { isFurniture: true, type: 'waterHeater', name: "Ballon d'eau chaude", defaultY: 0, dims: {x:1, z:1} };
+                    return group;
+                },
+                shelvingUnit: () => {
+                    const group = new THREE.Group();
+                    const frame = new THREE.Mesh(new THREE.BoxGeometry(1.2, 2.2, 0.45), new THREE.MeshStandardMaterial({ color: '#cbd5e1' }));
+                    frame.position.y = 1.1;
+                    group.add(frame);
+                    for(let i = 0; i < 4; i++) {
+                        const shelf = new THREE.Mesh(new THREE.BoxGeometry(1.18, 0.08, 0.43), new THREE.MeshStandardMaterial({ color: '#94a3b8' }));
+                        shelf.position.y = 0.2 + i * 0.5;
+                        group.add(shelf);
+                    }
+                    group.userData = { isFurniture: true, type: 'shelvingUnit', name: 'Étagères', dims: {x:1.2, z:0.45}, defaultY: 0 };
+                    return group;
+                },
+                desktopComputer: () => {
+                    const group = new THREE.Group();
+                    const tower = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.6, 0.5), new THREE.MeshStandardMaterial({ color: '#0f172a' }));
+                    tower.position.set(-0.35, 0.3, 0);
+                    const screen = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.4, 0.6), new THREE.MeshStandardMaterial({ color: '#1e293b' }));
+                    screen.position.set(0.2, 0.65, 0);
+                    const stand = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.2, 12), new THREE.MeshStandardMaterial({ color: '#475569' }));
+                    stand.position.set(0.2, 0.25, 0);
+                    const keyboard = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.05, 0.2), new THREE.MeshStandardMaterial({ color: '#94a3b8' }));
+                    keyboard.position.set(0.25, 0.1, 0.2);
+                    group.add(tower, screen, stand, keyboard);
+                    group.userData = { isFurniture: true, type: 'desktopComputer', name: 'Ordinateur de bureau', dims: {x:0.8, z:0.6}, defaultY: 0 };
+                    return group;
+                },
+                landlinePhone: () => {
+                    const body = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.08, 0.35), new THREE.MeshStandardMaterial({ color: '#0f172a' }));
+                    body.position.y = 0.04;
+                    const handset = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.26, 12), new THREE.MeshStandardMaterial({ color: '#1e293b' }));
+                    handset.rotation.z = Math.PI / 2;
+                    handset.position.set(0, 0.08, 0);
+                    const group = new THREE.Group();
+                    group.add(body, handset);
+                    group.userData = { isFurniture: true, type: 'landlinePhone', name: 'Téléphone fixe', dims: {x:0.2, z:0.35}, defaultY: 0 };
+                    return group;
+                },
+                printer: () => {
+                    const body = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.25, 0.3), new THREE.MeshStandardMaterial({ color: '#e5e7eb' }));
+                    body.position.y = 0.125;
+                    const tray = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.05, 0.18), new THREE.MeshStandardMaterial({ color: '#cbd5e1' }));
+                    tray.position.set(0, 0.22, 0.09);
+                    const group = new THREE.Group();
+                    group.add(body, tray);
+                    group.userData = { isFurniture: true, type: 'printer', name: 'Imprimante', dims: {x:0.35, z:0.3}, defaultY: 0 };
+                    return group;
+                },
+                drill: () => {
+                    const handle = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.18, 0.08), new THREE.MeshStandardMaterial({ color: '#0ea5e9' }));
+                    handle.position.y = 0.09;
+                    const body = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.12, 0.12), new THREE.MeshStandardMaterial({ color: '#0284c7' }));
+                    body.position.set(0.08, 0.21, 0);
+                    const bit = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.2, 8), new THREE.MeshStandardMaterial({ color: '#475569' }));
+                    bit.rotation.z = Math.PI / 2;
+                    bit.position.set(0.2, 0.2, 0);
+                    const group = new THREE.Group();
+                    group.add(handle, body, bit);
+                    group.userData = { isFurniture: true, type: 'drill', name: 'Perceuse', dims: {x:0.3, z:0.12}, defaultY: 0 };
+                    return group;
+                },
+                toolbox: () => {
+                    const box = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.18, 0.2), new THREE.MeshStandardMaterial({ color: '#b91c1c' }));
+                    box.position.y = 0.09;
+                    const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.3, 10), new THREE.MeshStandardMaterial({ color: '#f97316' }));
+                    handle.rotation.z = Math.PI / 2;
+                    handle.position.set(0, 0.18, 0);
+                    const group = new THREE.Group();
+                    group.add(box, handle);
+                    group.userData = { isFurniture: true, type: 'toolbox', name: 'Boîte à outils', dims: {x:0.4, z:0.2}, defaultY: 0 };
+                    return group;
+                },
+                wallShelf: () => {
+                    const plank = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.08, 0.25), new THREE.MeshStandardMaterial({ color: '#f97316' }));
+                    plank.position.y = 1.5;
+                    const brackets = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.08, 0.1), new THREE.MeshStandardMaterial({ color: '#0f172a' }));
+                    brackets.position.set(0, 1.45, -0.1);
+                    const group = new THREE.Group();
+                    group.add(plank, brackets);
+                    group.userData = { isFurniture: true, type: 'wallShelf', name: 'Étagère murale', isWallMounted: true, defaultY: 1.5, dims: {x:1, z:0.25} };
+                    return group;
+                },
+                deskLamp: () => {
+                    const base = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.05, 14), new THREE.MeshStandardMaterial({ color: '#0f172a' }));
+                    base.position.y = 0.025;
+                    const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.3, 10), new THREE.MeshStandardMaterial({ color: '#1e293b' }));
+                    arm.position.set(0, 0.2, 0);
+                    const head = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.16, 14), new THREE.MeshStandardMaterial({ color: '#f59e0b', emissive: '#fbbf24', emissiveIntensity: 0.5 }));
+                    head.rotation.x = Math.PI / 2;
+                    head.position.set(0, 0.38, 0.05);
+                    const group = new THREE.Group();
+                    group.add(base, arm, head);
+                    group.userData = { isFurniture: true, type: 'deskLamp', name: 'Lampe de bureau', dims: {x:0.16, z:0.16}, defaultY: 0 };
+                    return group;
+                },
+                router: () => {
+                    const body = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.06, 0.18), new THREE.MeshStandardMaterial({ color: '#1e293b' }));
+                    body.position.y = 0.03;
+                    const antenna1 = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.14, 8), new THREE.MeshStandardMaterial({ color: '#0ea5e9' }));
+                    antenna1.position.set(-0.06, 0.13, -0.05);
+                    const antenna2 = antenna1.clone(); antenna2.position.set(0.08, 0.13, 0.06);
+                    const group = new THREE.Group();
+                    group.add(body, antenna1, antenna2);
+                    group.userData = { isFurniture: true, type: 'router', name: 'Routeur Wi-Fi', dims: {x:0.24, z:0.18}, defaultY: 0 };
+                    return group;
+                },
+                whiteboard: () => {
+                    const board = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.9, 0.06), new THREE.MeshStandardMaterial({ color: '#f8fafc' }));
+                    board.position.y = 1.4;
+                    const frame = new THREE.Mesh(new THREE.BoxGeometry(1.45, 0.95, 0.08), new THREE.MeshStandardMaterial({ color: '#94a3b8' }));
+                    frame.position.y = 1.4;
+                    const group = new THREE.Group();
+                    group.add(frame, board);
+                    group.userData = { isFurniture: true, type: 'whiteboard', name: 'Tableau blanc', isWallMounted: true, defaultY: 1.4, dims: {x:1.45, z:0.08} };
+                    return group;
+                },
+                coffeeMachine: () => {
+                    const body = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.4, 0.25), new THREE.MeshStandardMaterial({ color: '#0f172a' }));
+                    body.position.y = 0.2;
+                    const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.08, 12), new THREE.MeshStandardMaterial({ color: '#f8fafc' }));
+                    cup.position.set(0, 0.05, 0.05);
+                    const spout = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.05, 0.08), new THREE.MeshStandardMaterial({ color: '#eab308' }));
+                    spout.position.set(0, 0.28, 0.12);
+                    const group = new THREE.Group();
+                    group.add(body, cup, spout);
+                    group.userData = { isFurniture: true, type: 'coffeeMachine', name: 'Machine à café', dims: {x:0.3, z:0.25}, defaultY: 0 };
+                    return group;
+                }
+            };
 
         const ExteriorFactory = {
             pelouse: () => {
@@ -1423,11 +1575,22 @@
                       { value: 'innerWall', label: 'Mur intérieur' },
                       { value: 'wcDoor', label: 'Porte WC' },
                       { value: 'mirror', label: 'Miroir' },
-                      { value: 'wallLamp', label: 'Lampe murale' },
-                      { value: 'wallNeon', label: 'Néon mural' },
-                      { value: 'heater', label: 'Chauffage' },
-                      { value: 'breakerBox', label: 'Boîtier disjoncteurs' }
-                  ];
+                        { value: 'wallLamp', label: 'Lampe murale' },
+                        { value: 'wallNeon', label: 'Néon mural' },
+                        { value: 'heater', label: 'Chauffage' },
+                        { value: 'breakerBox', label: 'Boîtier disjoncteurs' },
+                        { value: 'shelvingUnit', label: 'Étagères (meuble complet)' },
+                        { value: 'desktopComputer', label: 'Ordinateur de bureau' },
+                        { value: 'landlinePhone', label: 'Téléphone fixe' },
+                        { value: 'printer', label: 'Imprimante' },
+                        { value: 'drill', label: 'Perceuse' },
+                        { value: 'toolbox', label: 'Boîte à outils' },
+                        { value: 'wallShelf', label: 'Étagère murale' },
+                        { value: 'deskLamp', label: 'Lampe de bureau' },
+                        { value: 'router', label: 'Routeur Wi-Fi' },
+                        { value: 'whiteboard', label: 'Tableau blanc' },
+                        { value: 'coffeeMachine', label: 'Machine à café' }
+                    ];
                 this.uiMode = 'chambre';
                 this.stateManager = new StateManager(this); this.gridHelper = null;
                 this.init();
@@ -1832,11 +1995,11 @@
                 return room;
             }
 
-            createBlock(type, furnitureList = null, floorOverride = null) {
-                let mesh;
-                const targetFloor = floorOverride ?? this.floors.current;
-                const yPos = this.getFloorY(targetFloor);
-                const randX = Math.round((Math.random() * 4 - 2)) * 1;
+              createBlock(type, furnitureList = null, floorOverride = null) {
+                  let mesh;
+                  const targetFloor = floorOverride ?? this.floors.current;
+                  const yPos = this.getFloorY(targetFloor);
+                  const randX = Math.round((Math.random() * 4 - 2)) * 1;
                 const randZ = Math.round((Math.random() * 4 - 2)) * 1;
 
                 if (type === 'room') {
@@ -1959,11 +2122,11 @@
                     const hit = new THREE.Mesh(new THREE.BoxGeometry(2, CONFIG.floorHeight, 4), new THREE.MeshBasicMaterial({visible:false}));
                     hit.position.y = CONFIG.floorHeight/2; mesh.add(hit);
                     mesh.userData = { type: 'Escalier', name: 'Escalier', opacity: 1 };
-                }
+                  }
 
-                if (mesh) {
-                    this.captureBaseSize(mesh);
-                    const yOffset = this.getTypeYOffset(mesh.userData?.type || type);
+                  if (mesh) {
+                      this.captureBaseSize(mesh);
+                      const yOffset = this.getTypeYOffset(mesh.userData?.type || type);
                     mesh.position.set(randX, yPos + yOffset, randZ);
                     mesh.userData.floor = targetFloor;
                     mesh.userData.labelColor = CONFIG.defaultLabelColor;
@@ -1981,13 +2144,86 @@
                     this.scene.add(mesh);
                     this.selectObject(mesh);
                     this.stateManager.snapshot(); this.updateStats(); this.showToast(`${mesh.userData.name} créé`, 'success');
-                }
-                return mesh;
-            }
+                  }
+                  return mesh;
+              }
 
-            createApartment(size = 'moyenne') {
-                const factor = this.getSizeFactor(size);
-                const baseX = Math.round((Math.random() * 6 - 3));
+              buildRoof(shape = 'carre') {
+                  const group = new THREE.Group();
+                  const baseW = CONFIG.roomWidth * 1.1;
+                  const baseD = CONFIG.roomDepth * 1.1;
+                  const platform = new THREE.Mesh(new THREE.BoxGeometry(baseW, 0.2, baseD), new THREE.MeshStandardMaterial({ color: '#e2e8f0', roughness: 0.7 }));
+                  platform.position.y = 0.1; platform.castShadow = true; platform.receiveShadow = true;
+                  group.add(platform);
+
+                  const roofMat = new THREE.MeshStandardMaterial({ color: '#94a3b8', roughness: 0.6, metalness: 0.05 });
+                  let cover = null; let label = 'carrée';
+                  if(shape === 'carre') {
+                      cover = new THREE.Mesh(new THREE.ConeGeometry(Math.max(baseW, baseD) * 0.55, 1.4, 4), roofMat.clone());
+                      cover.rotation.y = Math.PI / 4;
+                      label = 'carrée';
+                  } else if(shape === 'triangle') {
+                      cover = new THREE.Mesh(new THREE.ConeGeometry(Math.max(baseW, baseD) * 0.6, 1.6, 3), roofMat.clone());
+                      cover.rotation.y = Math.PI / 6;
+                      label = 'triangulaire';
+                  } else if(shape === 'arrondi') {
+                      cover = new THREE.Mesh(new THREE.SphereGeometry(Math.max(baseW, baseD) * 0.45, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2), roofMat.clone());
+                      label = 'arrondie';
+                  }
+
+                  if(!cover) return null;
+                  cover.position.y = 1.0; cover.castShadow = true; cover.receiveShadow = true; group.add(cover);
+
+                  const hitBox = new THREE.Mesh(new THREE.BoxGeometry(baseW, 1.6, baseD), new THREE.MeshBasicMaterial({ visible: false }));
+                  hitBox.position.y = 0.8; hitBox.name = 'StructureHitbox';
+                  group.add(hitBox);
+
+                  group.userData = {
+                      type: 'Toiture',
+                      name: `Toiture ${label}`,
+                      roofShape: shape,
+                      labelText: 'Toit',
+                      labelColor: CONFIG.defaultLabelColor,
+                      textColor: CONFIG.defaultTextColor,
+                      labelScale: CONFIG.defaultLabelScale,
+                      labelOffset: { ...CONFIG.defaultLabelOffset },
+                      labelVisible: true,
+                      opacity: 1,
+                      addsFloor: true
+                  };
+                  return group;
+              }
+
+              createRoof(shape = 'carre', floorOverride = null) {
+                  const roof = this.buildRoof(shape);
+                  if(!roof) { this.showToast('Forme de toiture inconnue', 'error'); return null; }
+
+                  const randX = Math.round((Math.random() * 4 - 2));
+                  const randZ = Math.round((Math.random() * 4 - 2));
+                  const targetFloor = floorOverride ?? Math.max(this.floors.max, this.floors.current) + 1;
+                  this.captureBaseSize(roof);
+                  const base = this.getStructureBaseSize(roof);
+                  const height = base ? base.y * roof.scale.y : CONFIG.floorHeight;
+                  roof.position.set(randX, this.getFloorY(targetFloor) + height / 2, randZ);
+                  roof.userData.floor = targetFloor;
+                  this.applyStoredOpacityToObject(roof);
+                  this.scene.add(roof);
+                  if(roof.userData.labelText) this.addLabel(roof, roof.userData.labelText);
+
+                  if(targetFloor > this.floors.max) this.floors.max = targetFloor;
+                  this.floors.current = targetFloor;
+                  this.updateFloorVisibility();
+                  this.updateUI();
+                  if(this.gridHelper) this.gridHelper.position.y = this.getFloorY(this.floors.current);
+                  this.selectObject(roof);
+                  this.stateManager.snapshot(); this.updateStats();
+                  this.showToast(`${roof.userData.name} ajoutée`, 'success');
+                  return roof;
+              }
+
+              createApartment(size = 'moyenne') {
+                  const factor = this.getSizeFactor(size);
+                  const baseX = Math.round((Math.random() * 6 - 3));
                 const baseZ = Math.round((Math.random() * 4 - 2));
                 const spacing = CONFIG.roomWidth * factor + 1;
                 const presets = ['cuisine', 'reunion', 'bain'];
@@ -3334,10 +3570,11 @@
                       let obj;
                     if(data.type === 'Chambre') obj = this.createBlock('room', data.furniture);
                     else if(data.type === 'Couloir') obj = this.createBlock('corridor');
-                    else if(data.type === 'Zone' || data.type === 'Generic') obj = this.createBlock('generic');
-                    else if(data.type === 'Escalier') obj = this.createBlock('stairs');
-                    else if(data.userData?.type === 'Exterieur') {
-                        const element = data.userData.element || 'pelouse';
+                      else if(data.type === 'Zone' || data.type === 'Generic') obj = this.createBlock('generic');
+                      else if(data.type === 'Escalier') obj = this.createBlock('stairs');
+                      else if(data.type === 'Toiture') obj = this.createRoof(data.userData?.roofShape || 'carre', data.userData.floor);
+                      else if(data.userData?.type === 'Exterieur') {
+                          const element = data.userData.element || 'pelouse';
                         if(element.startsWith('terrasse')) obj = this.createExteriorPreset('terrasse', element.split('-')[1] || 'moyenne');
                         else if(element.startsWith('parking')) obj = this.createExteriorPreset('parking', element.split('-')[1] || 'moyenne');
                         else obj = this.createExterior(element, data.userData.floor || 0);
