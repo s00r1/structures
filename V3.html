@@ -831,17 +831,17 @@
                   mesh.userData = { isFurniture: true, type: 'innerWall', name: 'Mur intérieur', dims: {x:0.2, z:3}, defaultY: mesh.position.y };
                   return mesh;
               },
-              wcDoor: () => {
-                  const group = new THREE.Group();
-                  const h = CONFIG.floorHeight * 0.9;
-                  const frame = new THREE.Mesh(new THREE.BoxGeometry(0.9, h, 0.25), new THREE.MeshStandardMaterial({ color: '#cbd5e1' }));
-                  frame.position.y = h / 2;
-                  const leaf = new THREE.Mesh(new THREE.BoxGeometry(0.7, h * 0.9, 0.3), new THREE.MeshStandardMaterial({ color: '#94a3b8' }));
-                  leaf.position.set(0, h / 2, 0);
-                  group.add(frame, leaf);
-                  group.userData = { isFurniture: true, type: 'wcDoor', name: 'Porte WC', isWallMounted: true, defaultY: 0, dims: {x:0.9, z:0.3} };
-                  return group;
-              },
+                wcDoor: () => {
+                    const group = new THREE.Group();
+                    const h = CONFIG.floorHeight * 0.9;
+                    const frame = new THREE.Mesh(new THREE.BoxGeometry(0.9, h, 0.25), new THREE.MeshStandardMaterial({ color: '#cbd5e1' }));
+                    frame.position.y = h / 2;
+                    const leaf = new THREE.Mesh(new THREE.BoxGeometry(0.7, h * 0.9, 0.3), new THREE.MeshStandardMaterial({ color: '#94a3b8' }));
+                    leaf.position.set(0, h / 2, 0);
+                    group.add(frame, leaf);
+                    group.userData = { isFurniture: true, type: 'wcDoor', name: 'Porte WC', isWallMounted: false, defaultY: 0, dims: {x:0.9, z:0.3} };
+                    return group;
+                },
               mirror: () => {
                   const frame = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.6, 0.08), new THREE.MeshStandardMaterial({ color: '#0f172a' }));
                   const glass = new THREE.Mesh(new THREE.BoxGeometry(1.0, 1.4, 0.04), new THREE.MeshStandardMaterial({ color: '#e2e8f0', metalness: 0.8, roughness: 0.1, envMapIntensity: 0.9 }));
@@ -1835,10 +1835,6 @@
                 if(!factory) { this.showToast('Objet inconnu', 'error'); return; }
                 let container = target.getObjectByName('Furniture');
                 if(!container) { container = new THREE.Group(); container.name = 'Furniture'; target.add(container); }
-                if(type === 'wcDoor') {
-                    const innerWalls = container.children.filter(c => c.userData?.type === 'innerWall');
-                    if(innerWalls.length === 0) { this.showToast('Impossible d\'ajouter une porte WC sans mur intérieur.', 'error'); return; }
-                }
                 const item = factory();
                 item.position.set(0, item.userData.defaultY || 0, 0);
                 this.applyStoredOpacityToObject(item);
@@ -1876,22 +1872,18 @@
             // --- SNAP & CONTRAINTES ---
             snapWcDoorToInnerWall(obj) {
                 const room = obj.parent;
-                if(!room) return;
+                if(!room) return false;
                 const furniture = room.getObjectByName('Furniture');
                 const innerWalls = furniture ? furniture.children.filter(c => c.userData?.type === 'innerWall') : [];
 
-                if(innerWalls.length === 0) {
-                    this.showToast('Impossible de placer une porte WC : aucun mur intérieur créé.', 'error');
-                    obj.position.set(0, obj.position.y, 0);
-                    return;
-                }
+                if(innerWalls.length === 0) return false;
 
                 let closestWall = null; let minDist = Infinity;
                 innerWalls.forEach(wall => {
                     const dist = wall.position.distanceTo(obj.position);
                     if(dist < minDist) { minDist = dist; closestWall = wall; }
                 });
-                if(!closestWall) return;
+                if(!closestWall) return false;
 
                 const wallDims = closestWall.userData?.dims || { x: 0.2, z: 3 };
                 const doorDims = obj.userData?.dims || { x: 0.9, z: 0.3 };
@@ -1914,6 +1906,7 @@
                     obj.position.x = THREE.MathUtils.clamp(obj.position.x, closestWall.position.x - halfLength, closestWall.position.x + halfLength);
                     obj.rotation.y = Math.PI / 2;
                 }
+                return true;
             }
 
             snapObject(obj) {
@@ -1923,12 +1916,10 @@
                     const maxY = CONFIG.floorHeight * 0.99;
                     obj.position.y = THREE.MathUtils.clamp(obj.position.y, minY, maxY);
 
+                    const isWcDoor = obj.userData.type === 'wcDoor';
+
                     // 2. LOGIQUE "AIMANT" MUR (Porte & Fenêtre)
-                    if (obj.userData.isWallMounted) {
-                        if(obj.userData.type === 'wcDoor') {
-                            this.snapWcDoorToInnerWall(obj);
-                            return;
-                        }
+                    if (obj.userData.isWallMounted && !isWcDoor) {
                         const parent = obj.parent; // Le groupe Chambre
                         // Si la chambre est redimensionnée, on adapte le calcul
                         const w = (CONFIG.roomWidth * parent.scale.x) / 2;
@@ -1948,51 +1939,57 @@
                         } else if (min === distS) { // Mur Sud
                             obj.position.z = d - margin; obj.rotation.y = 0;
                             obj.position.x = Math.max(-w+0.8, Math.min(w-0.8, obj.position.x));
-                          } else if (min === distE) { // Mur Est
-                              obj.position.x = w - margin; obj.rotation.y = Math.PI/2;
-                              obj.position.z = Math.max(-d+0.8, Math.min(d-0.8, obj.position.z));
-                          } else { // Mur Ouest
-                              obj.position.x = -w + margin; obj.rotation.y = Math.PI/2;
-                              obj.position.z = Math.max(-d+0.8, Math.min(d-0.8, obj.position.z));
-                          }
-
-                          if(obj.userData.wallOffset) {
-                              const dir = new THREE.Vector3(
-                                  min === distE ? 1 : min === distW ? -1 : 0,
-                                  0,
-                                  min === distS ? 1 : min === distN ? -1 : 0
-                              );
-                              obj.position.addScaledVector(dir, obj.userData.wallOffset);
-                          }
-
-                      } else {
-                          // 3. MEUBLES CLASSIQUES
-                        if(this.control.mode === 'translate') {
-                            obj.position.x = Math.round(obj.position.x / 0.1) * 0.1;
-                            obj.position.z = Math.round(obj.position.z / 0.1) * 0.1;
+                        } else if (min === distE) { // Mur Est
+                            obj.position.x = w - margin; obj.rotation.y = Math.PI/2;
+                            obj.position.z = Math.max(-d+0.8, Math.min(d-0.8, obj.position.z));
+                        } else { // Mur Ouest
+                            obj.position.x = -w + margin; obj.rotation.y = Math.PI/2;
+                            obj.position.z = Math.max(-d+0.8, Math.min(d-0.8, obj.position.z));
                         }
 
-                        // CONFINEMENT (Reste dans la pièce)
-                        const parent = obj.parent;
-                        const roomW = CONFIG.roomWidth * parent.scale.x;
-                        const roomD = CONFIG.roomDepth * parent.scale.z;
-                        const padding = 0.2;
-                        const dimsX = (obj.userData.dims?.x || 0.5) * (obj.scale?.x || 1);
-                        const dimsZ = (obj.userData.dims?.z || 0.5) * (obj.scale?.z || 1);
-                        const rotY = obj.rotation?.y || 0;
-                        const cosY = Math.abs(Math.cos(rotY));
-                        const sinY = Math.abs(Math.sin(rotY));
+                        if(obj.userData.wallOffset) {
+                            const dir = new THREE.Vector3(
+                                min === distE ? 1 : min === distW ? -1 : 0,
+                                0,
+                                min === distS ? 1 : min === distN ? -1 : 0
+                            );
+                            obj.position.addScaledVector(dir, obj.userData.wallOffset);
+                        }
 
-                        // Rayon projeté sur les axes après rotation (AABB du rectangle tourné)
-                        const halfX = (dimsX * cosY + dimsZ * sinY) / 2;
-                        const halfZ = (dimsZ * cosY + dimsX * sinY) / 2;
+                        return;
+                    }
 
-                          const minX = - (roomW / 2) + halfX + padding; const maxX = (roomW / 2) - halfX - padding;
-                          const minZ = - (roomD / 2) + halfZ + padding; const maxZ = (roomD / 2) - halfZ - padding;
+                    if (isWcDoor && obj.userData.isWallMounted) {
+                        const snapped = this.snapWcDoorToInnerWall(obj);
+                        if(snapped) return;
+                    }
 
-                          obj.position.x = Math.max(minX, Math.min(maxX, obj.position.x));
-                          obj.position.z = Math.max(minZ, Math.min(maxZ, obj.position.z));
-                      }
+                    // 3. MEUBLES CLASSIQUES (dont porte WC placée librement)
+                    if(this.control.mode === 'translate') {
+                        obj.position.x = Math.round(obj.position.x / 0.1) * 0.1;
+                        obj.position.z = Math.round(obj.position.z / 0.1) * 0.1;
+                    }
+
+                    // CONFINEMENT (Reste dans la pièce)
+                    const parent = obj.parent;
+                    const roomW = CONFIG.roomWidth * parent.scale.x;
+                    const roomD = CONFIG.roomDepth * parent.scale.z;
+                    const padding = 0.2;
+                    const dimsX = (obj.userData.dims?.x || 0.5) * (obj.scale?.x || 1);
+                    const dimsZ = (obj.userData.dims?.z || 0.5) * (obj.scale?.z || 1);
+                    const rotY = obj.rotation?.y || 0;
+                    const cosY = Math.abs(Math.cos(rotY));
+                    const sinY = Math.abs(Math.sin(rotY));
+
+                    // Rayon projeté sur les axes après rotation (AABB du rectangle tourné)
+                    const halfX = (dimsX * cosY + dimsZ * sinY) / 2;
+                    const halfZ = (dimsZ * cosY + dimsX * sinY) / 2;
+
+                    const minX = - (roomW / 2) + halfX + padding; const maxX = (roomW / 2) - halfX - padding;
+                    const minZ = - (roomD / 2) + halfZ + padding; const maxZ = (roomD / 2) - halfZ - padding;
+
+                    obj.position.x = Math.max(minX, Math.min(maxX, obj.position.x));
+                    obj.position.z = Math.max(minZ, Math.min(maxZ, obj.position.z));
 
                   } else {
                     // 4. DÉPLACEMENT STRUCTURE
