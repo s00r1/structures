@@ -671,6 +671,17 @@
                          <button onclick="app.resizeSelection('M')" class="flex-1 py-1 bg-white border border-gray-200 rounded text-xs font-bold text-gray-600 hover:bg-gray-50">M</button>
                          <button onclick="app.resizeSelection('L')" class="flex-1 py-1 bg-white border border-gray-200 rounded text-xs font-bold text-gray-600 hover:bg-gray-50">L</button>
                      </div>
+                     <div id="structureDimensionsSection" class="mt-2 grid grid-cols-3 gap-2 text-[10px] text-gray-600">
+                         <label class="flex flex-col bg-white border border-gray-200 rounded p-2 gap-1">Longueur
+                             <input id="structureLengthInput" type="number" step="0.1" min="0.1" class="w-full text-xs border border-gray-200 rounded px-1 py-0.5" />
+                         </label>
+                         <label class="flex flex-col bg-white border border-gray-200 rounded p-2 gap-1">Largeur
+                             <input id="structureWidthInput" type="number" step="0.1" min="0.1" class="w-full text-xs border border-gray-200 rounded px-1 py-0.5" />
+                         </label>
+                         <label class="flex flex-col bg-white border border-gray-200 rounded p-2 gap-1">Hauteur
+                             <input id="structureHeightInput" type="number" step="0.1" min="0.1" class="w-full text-xs border border-gray-200 rounded px-1 py-0.5" />
+                         </label>
+                     </div>
                 </div>
 
                 <!-- Label Controls -->
@@ -1683,6 +1694,14 @@
                 ['X','Y','Z'].forEach(axis => {
                     document.getElementById('labelPos'+axis).onchange = (e) => this.updateLabelOffset(axis.toLowerCase(), parseFloat(e.target.value));
                 });
+                [
+                    { id: 'structureLengthInput', axis: 'x' },
+                    { id: 'structureWidthInput', axis: 'z' },
+                    { id: 'structureHeightInput', axis: 'y' }
+                ].forEach(cfg => {
+                    const el = document.getElementById(cfg.id);
+                    if(el) el.onchange = (e) => this.updateStructureDimension(cfg.axis, e.target.value);
+                });
                   document.getElementById('toggleDoorLabelBtn').onclick = () => this.toggleDoorLabel();
                   document.getElementById('toggleLabelBtn').onclick = () => this.toggleSelectedLabel();
                   document.getElementById('toggleAllLabelsBtn').onclick = () => this.toggleAllLabels();
@@ -1943,6 +1962,7 @@
                 }
 
                 if (mesh) {
+                    this.captureBaseSize(mesh);
                     const yOffset = this.getTypeYOffset(mesh.userData?.type || type);
                     mesh.position.set(randX, yPos + yOffset, randZ);
                     mesh.userData.floor = targetFloor;
@@ -1999,6 +2019,7 @@
                 element.userData.labelVisible = false;
                 element.userData.isExterior = true;
                 element.userData.opacity = element.userData.opacity ?? 1;
+                this.captureBaseSize(element);
                 this.applyStoredOpacityToObject(element);
                 this.scene.add(element);
                 if(targetFloor > this.floors.max) { this.floors.max = targetFloor; this.updateUI(); }
@@ -2158,6 +2179,54 @@
                     }
                 });
                 if(!attached && allowFallback) this.attachDoorBadgeToFront(obj, text);
+            }
+
+            captureBaseSize(obj) {
+                if(!obj || obj.userData?.isFurniture) return;
+                const target = obj.getObjectByName('StructureHitbox') || obj;
+                const bbox = new THREE.Box3().setFromObject(target);
+                const size = bbox.getSize(new THREE.Vector3());
+                obj.userData.baseSize = {
+                    x: size.x / (obj.scale?.x || 1),
+                    y: size.y / (obj.scale?.y || 1),
+                    z: size.z / (obj.scale?.z || 1)
+                };
+            }
+
+            getStructureBaseSize(obj) {
+                if(!obj || obj.userData?.isFurniture) return null;
+                if(!obj.userData.baseSize) this.captureBaseSize(obj);
+                return obj.userData.baseSize || null;
+            }
+
+            refreshStructureDimensionsUI(obj) {
+                const section = document.getElementById('structureDimensionsSection');
+                if(!section) return;
+                if(!obj || obj.userData?.isFurniture) { section.classList.add('hidden'); return; }
+                const base = this.getStructureBaseSize(obj);
+                if(!base) { section.classList.add('hidden'); return; }
+                const length = base.x * obj.scale.x;
+                const height = base.y * obj.scale.y;
+                const width = base.z * obj.scale.z;
+                document.getElementById('structureLengthInput').value = length.toFixed(2);
+                document.getElementById('structureWidthInput').value = width.toFixed(2);
+                document.getElementById('structureHeightInput').value = height.toFixed(2);
+                section.classList.remove('hidden');
+            }
+
+            updateStructureDimension(axis, value) {
+                if(!this.selectedObject || this.selectedObject.userData?.isFurniture) return;
+                const val = parseFloat(value);
+                if(isNaN(val) || val <= 0) return;
+                const base = this.getStructureBaseSize(this.selectedObject);
+                if(!base) return;
+                const baseSize = axis === 'x' ? base.x : axis === 'y' ? base.y : base.z;
+                if(baseSize <= 0) return;
+                this.selectedObject.scale[axis] = val / baseSize;
+                this.snapObject(this.selectedObject);
+                this.refreshStructureDimensionsUI(this.selectedObject);
+                this.stateManager.snapshot();
+                this.updateStats();
             }
 
             refreshLabelUI(obj) {
@@ -2557,6 +2626,7 @@
                       }
                   }
                   if(obj.userData?.isBreaker || obj.userData?.type === 'Chambre') this.updateBreakerCables();
+                  if(obj === this.selectedObject) this.refreshStructureDimensionsUI(obj);
               }
 
             // --- EVENTS ---
@@ -2656,6 +2726,7 @@
                           this.refreshBreakerUI(null);
                       }
                       this.updateColorControlsForSelection(obj);
+                      this.refreshStructureDimensionsUI(obj);
                       if(dupInput) dupInput.value = obj.userData.floor ?? this.floors.current;
                       } else {
                     this.control.detach();
@@ -2665,6 +2736,7 @@
                     this.refreshOpacityUI(null);
                     this.refreshWallUI(null);
                     this.updateColorControlsForSelection(null);
+                    this.refreshStructureDimensionsUI(null);
                     if(dupInput) dupInput.value = this.floors.current;
                 }
                   this.updateMultiSelectionUI();
@@ -3123,6 +3195,7 @@
                 const s = scales[size];
                 this.selectedObject.scale.set(s[0], s[1], s[2]);
                 this.snapObject(this.selectedObject);
+                this.refreshStructureDimensionsUI(this.selectedObject);
                 this.stateManager.snapshot(); this.updateStats();
             }
 
@@ -3273,6 +3346,7 @@
                           obj.position.fromArray(data.position); obj.rotation.fromArray(data.rotation); obj.scale.fromArray(data.scale); obj.userData = data.userData;
                           const yBase = this.getFloorY(obj.userData.floor || 0) + this.getTypeYOffset(obj.userData.type);
                           obj.position.y = yBase;
+                          if(!obj.userData.baseSize) this.captureBaseSize(obj);
                           if(obj.userData.type === 'Chambre') this.ensureRoomId(obj);
                           this.ensureLabelDefaults(obj);
                           if(obj.userData.labelText) this.addLabel(obj, obj.userData.labelText);
@@ -3325,7 +3399,7 @@
 
             updateStats() {
                 let count = 0; let area = 0;
-                this.scene.traverse(obj => { if(obj.userData && obj.userData.type === 'Chambre') { count++; area += (obj.scale.x * 4) * (obj.scale.z * 6); } });
+                this.scene.traverse(obj => { if(obj.userData && obj.userData.type === 'Chambre') { count++; const base = obj.userData.baseSize || { x: 4, z: 6 }; area += (obj.scale.x * base.x) * (obj.scale.z * base.z); } });
                 document.getElementById('statRooms').innerText = count; document.getElementById('statArea').innerText = Math.round(area) + " m²";
             }
 
